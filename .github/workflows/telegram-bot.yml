@@ -1,0 +1,79 @@
+name: Telegram Bot
+
+# The bot polls Telegram (outbound only), so it CAN run on Actions runners.
+# A run is time-boxed: each job listens for a few minutes, then persists state
+# and exits. Telegram queues updates for ~24h, so messages sent between runs
+# are picked up on the next run.
+#
+# NOTE: this is NOT a 24/7 server. Expect up to ~5 min latency between runs.
+# For always-on behaviour, run `python -m app.bot` on a small VPS instead.
+
+on:
+  schedule:
+    # Every 5 minutes. Actions cron can be delayed under load.
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+# Needed so the job can commit state back to the repo.
+permissions:
+  contents: write
+
+# Never run two bot jobs at once (would double-poll and race on state).
+concurrency:
+  group: telegram-bot
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Persist the state branch so the DB survives between runs.
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Restore persisted state
+        run: |
+          mkdir -p data
+          echo "GIT_PERSIST=1" >> "$GITHUB_ENV"
+
+      - name: Run bot (time-boxed polling window)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ALLOWED_USERS: ${{ secrets.TELEGRAM_ALLOWED_USERS }}
+          LLM_BASE_URL: ${{ secrets.LLM_BASE_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ vars.LLM_MODEL || 'auto' }}
+          LLM_DRIVER: ${{ vars.LLM_DRIVER || 'openai' }}
+          WHISPER_MODEL: ${{ vars.WHISPER_MODEL || 'base' }}
+          BOT_POLL_SECONDS: "270"
+          GIT_PERSIST: "1"
+          GIT_PUSH: "1"
+        run: python -m app.bot --seconds 270
+
+      - name: Persist state (commit DB back)
+        if: always()
+        run: |
+          git config user.name "spectremotion-bot"
+          git config user.email "bot@spectremotion.local"
+          git add -f data/app.db data/cache 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No state change"
+          else
+            git commit -m "chore(state): telegram bot state [skip ci]"
+            git push
+          fi

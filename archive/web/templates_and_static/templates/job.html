@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job {{ job.id[:8] }} — SpectreMotion</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="back">← Kembali</a>
+    <h1>Job {{ job.id[:8] }}</h1>
+    <span class="sub">{{ job.source_name or job.source_url }}</span>
+    <button id="btn-render-all" class="btn-sm" style="margin-left:auto">⚡ Render semua</button>
+  </header>
+
+  <main>
+    <section class="card" id="status-card">
+      <h2>Status</h2>
+      <p>Status: <span id="j-status" class="pill pill-{{ job.status }}">{{ job.status }}</span>
+         <span class="live-dot" id="live-dot" title="live"></span></p>
+      <p>Tahap: <span id="j-stage">{{ job.stage }}</span></p>
+      <div class="progress"><div id="j-bar" class="bar" style="width: {{ (job.progress*100)|round(0)|int }}%"></div></div>
+      <p id="j-msg" class="muted">{{ job.message }}</p>
+      <p id="j-error" class="error">{{ job.error }}</p>
+    </section>
+
+    <section class="card">
+      <h2>Katalog Klip</h2>
+      <div id="clips" class="clips">
+        {% for c in clips %}
+        <div class="clip-card verdict-{{ c.verdict }}" data-clip="{{ c.id }}">
+          <div class="clip-head">
+            <strong>#{{ c.idx + 1 }}</strong>
+            <span class="score">🔥 {{ c.viral_score }}</span>
+            <span class="pill pill-{{ c.verdict }}">{{ c.verdict }}</span>
+          </div>
+          <p class="hook">{{ c.hook }}</p>
+          <p class="topic">{{ c.topic }}</p>
+          <p class="muted">{{ "%.0f"|format(c.start_s) }}s – {{ "%.0f"|format(c.end_s) }}s</p>
+          <p class="caption muted">{{ c.caption }}</p>
+          {% if c.verdict_msg %}<p class="verdict-msg">{{ c.verdict_msg }}</p>{% endif %}
+          <div class="clip-actions">
+            {% if c.rendered %}
+            <a class="btn btn-sm" href="/api/clips/{{ c.id }}/download">⬇ Download</a>
+            {% else %}
+            <button class="btn btn-sm render-one" data-clip="{{ c.id }}">🎬 Render</button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const jobId = "{{ job.id }}";
+    const clipsBox = document.getElementById('clips');
+
+    function esc(s){ return (s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+    function cardHtml(c){
+      const btn = c.rendered
+        ? `<a class="btn btn-sm" href="/api/clips/${c.id}/download">⬇ Download</a>`
+        : `<button class="btn btn-sm render-one" data-clip="${c.id}">🎬 Render</button>`;
+      return `<div class="clip-card verdict-${c.verdict}" data-clip="${c.id}">
+        <div class="clip-head"><strong>#${c.idx+1}</strong>
+          <span class="score">🔥 ${c.viral_score}</span>
+          <span class="pill pill-${c.verdict}">${c.verdict}</span></div>
+        <p class="hook">${esc(c.hook)}</p>
+        <p class="topic">${esc(c.topic)}</p>
+        <p class="muted">${Math.round(c.start)}s – ${Math.round(c.end)}s</p>
+        <p class="caption muted">${esc(c.caption)}</p>
+        ${c.verdict_msg?`<p class="verdict-msg">${esc(c.verdict_msg)}</p>`:''}
+        <div class="clip-actions">${btn}</div></div>`;
+    }
+
+    async function refresh(){
+      const res = await fetch('/api/jobs/'+jobId);
+      if(!res.ok) return true;
+      const j = await res.json();
+      document.getElementById('j-status').textContent = j.status;
+      document.getElementById('j-status').className = 'pill pill-'+j.status;
+      document.getElementById('j-stage').textContent = j.stage;
+      document.getElementById('j-bar').style.width = (j.progress*100)+'%';
+      document.getElementById('j-msg').textContent = j.message||'';
+      document.getElementById('j-error').textContent = j.error||'';
+      if (j.clips && j.clips.length) clipsBox.innerHTML = j.clips.map(cardHtml).join('');
+      return !(j.status==='done'||j.status==='failed');
+    }
+
+    // Live SSE progress with automatic fallback to polling.
+    let es = null;
+    function startSSE(){
+      try {
+        es = new EventSource('/events/'+jobId);
+        es.onmessage = () => { refresh(); };
+        es.onerror = () => { if(es){ es.close(); es=null; } };
+      } catch(e) { /* polling fallback below */ }
+    }
+    startSSE();
+    const poll = setInterval(async () => { if(!(await refresh())) clearInterval(poll); }, 3000);
+
+    document.addEventListener('click', async (e) => {
+      const one = e.target.closest('.render-one');
+      if (one) {
+        one.disabled = true; one.textContent = '…';
+        await fetch('/api/clips/'+one.dataset.clip+'/render', {method:'POST'});
+        setTimeout(refresh, 800);
+      }
+    });
+    document.getElementById('btn-render-all').onclick = async (e) => {
+      e.target.disabled = true; e.target.textContent = '…';
+      await fetch('/api/jobs/'+jobId+'/render-all', {method:'POST'});
+      setTimeout(refresh, 800);
+    };
+  </script>
+</body>
+</html>

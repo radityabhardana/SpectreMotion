@@ -1,0 +1,31 @@
+# SpectreMotion reverse proxy.
+# Replace `spectre.example.com` with your domain; Caddy auto-provisions TLS.
+# The app also enforces APP_TOKEN / sessions, so this is defense in depth.
+
+spectre.example.com {
+    encode gzip
+
+    # Video downloads can be large; don't buffer them through Caddy.
+    reverse_proxy 127.0.0.1:8080 {
+        # SSE progress must stream, not buffer.
+        flush_interval -1
+    }
+
+    # Basic upload size ceiling (adjust to MAX_UPLOAD_MB).
+    request_body {
+        max_size 2GB
+    }
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
+
+# Optional local-only HTTP for development.
+http://localhost:8088 {
+    reverse_proxy 127.0.0.1:8080 {
+        flush_interval -1
+    }
+}

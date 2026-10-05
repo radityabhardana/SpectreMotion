@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hook Studio — SpectreMotion</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="back">← Kembali</a>
+    <h1>Hook Studio</h1>
+    <span class="sub">Edit & preview style hook/subtitle</span>
+  </header>
+
+  <main class="studio">
+    <section class="card">
+      <h2>Preset</h2>
+      <div id="presets" class="preset-grid"></div>
+    </section>
+
+    <section class="card">
+      <h2>Layer: Hook Text</h2>
+      <label>Teks hook (pakai *kata* untuk highlight)</label>
+      <textarea id="hook-text">INI CONTOH *HOOK* VIRAL</textarea>
+
+      <div class="grid2">
+        <label>Font size <input type="number" id="font-size" value="64" /></label>
+        <label>Warna teks <input type="color" id="font-color" value="#ffffff" /></label>
+        <label>Warna highlight <input type="color" id="highlight" value="#00ff66" /></label>
+        <label>Radius box <input type="number" id="box-radius" value="18" /></label>
+      </div>
+
+      <label class="check"><input type="checkbox" id="box-on" checked /> Tampilkan box/bubble</label>
+      <label class="check"><input type="checkbox" id="stroke-on" /> Outline teks</label>
+
+      <div class="row">
+        <button id="btn-preview">👁 Preview</button>
+        <button id="btn-save">💾 Simpan Template</button>
+      </div>
+      <p id="msg" class="muted"></p>
+    </section>
+
+    <section class="card">
+      <h2>Preview 9:16</h2>
+      <img id="preview" class="preview" alt="preview" />
+      <details><summary>JSON template</summary><pre id="template-json"></pre></details>
+    </section>
+  </main>
+
+  <script>
+    function hex2(v, def){ return (v||def||'').replace(/[^#0-9a-fA-F@.]/g,'') || def; }
+
+    async function loadTemplate(){
+      const res = await fetch('/api/template');
+      const t = await res.json();
+      document.getElementById('template-json').textContent = JSON.stringify(t, null, 2);
+      const h = t.hook || {};
+      document.getElementById('font-size').value = h.font_size || 64;
+      document.getElementById('font-color').value = hex2(h.font_color, '#ffffff');
+      document.getElementById('highlight').value = hex2((t.subtitle||{}).highlight_color, '#00ff66');
+      document.getElementById('box-radius').value = h.box_radius || 18;
+      document.getElementById('box-on').checked = h.box !== false;
+      document.getElementById('stroke-on').checked = (h.stroke_w || 0) > 0;
+      return t;
+    }
+
+    function collect(){
+      return {
+        font_size: parseInt(document.getElementById('font-size').value||'64',10),
+        font_color: document.getElementById('font-color').value,
+        highlight_color: document.getElementById('highlight').value,
+        box_radius: parseInt(document.getElementById('box-radius').value||'18',10),
+        box: document.getElementById('box-on').checked,
+        stroke_w: document.getElementById('stroke-on').checked ? 3 : 0,
+      };
+    }
+
+    async function preview(){
+      const res = await fetch('/api/template/preview', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text: document.getElementById('hook-text').value, hook: collect() })
+      });
+      if(!res.ok){ document.getElementById('msg').textContent = 'Preview gagal: '+res.status; return; }
+      document.getElementById('preview').src = URL.createObjectURL(await res.blob());
+    }
+
+    async function save(){
+      const t = await loadTemplate();
+      t.hook = Object.assign({}, t.hook, collect());
+      t.subtitle = Object.assign({}, t.subtitle, {
+        highlight_color: document.getElementById('highlight').value
+      });
+      const res = await fetch('/api/template', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(t)
+      });
+      document.getElementById('msg').textContent = res.ok ? 'Tersimpan ✓' : 'Gagal menyimpan';
+      document.getElementById('template-json').textContent = JSON.stringify(t, null, 2);
+    }
+
+    async function loadPresets(){
+      const res = await fetch('/api/presets');
+      const list = await res.json();
+      const box = document.getElementById('presets');
+      box.innerHTML = list.map(p => `<button class="preset-btn" data-id="${p.id}">${p.name}</button>`).join('');
+      box.querySelectorAll('.preset-btn').forEach(b => b.onclick = async () => {
+        const r = await fetch('/api/template?preset='+b.dataset.id);
+        // preset applying: server merges; simplest is to load preset then save
+        const t = await (await fetch('/api/template')).json();
+        const preset = await (await fetch('/api/preset/'+b.dataset.id)).json();
+        const merged = Object.assign({}, t, preset);
+        await fetch('/api/template', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(merged)});
+        document.getElementById('msg').textContent = 'Preset '+b.dataset.id+' diterapkan';
+        await loadTemplate(); preview();
+      });
+    }
+
+    document.getElementById('btn-preview').onclick = preview;
+    document.getElementById('btn-save').onclick = save;
+    document.getElementById('hook-text').addEventListener('input', preview);
+    ['font-size','font-color','highlight','box-radius','box-on','stroke-on'].forEach(id =>
+      document.getElementById(id).addEventListener('change', preview));
+    loadTemplate().then(preview);
+    loadPresets();
+  </script>
+</body>
+</html>

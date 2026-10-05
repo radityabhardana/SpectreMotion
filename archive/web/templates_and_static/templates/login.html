@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SpectreMotion — Masuk</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="auth">
+  <form class="card login" method="post" action="/login">
+    <h1>SpectreMotion</h1>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    <p class="muted">Masuk dengan akun, atau tempel APP_TOKEN lama.</p>
+    <input type="text" name="username" placeholder="username" autofocus autocomplete="username" />
+    <input type="password" name="password" placeholder="password" autocomplete="current-password" />
+    <button type="submit">Masuk</button>
+    <details>
+      <summary>Pakai access token (legacy)</summary>
+      <input type="password" name="token" placeholder="access token" />
+    </details>
+  </form>
+
+  <form class="card login" method="post" action="/register">
+    <h2>Buat akun pertama</h2>
+    <p class="muted">Hanya tersedia jika belum ada user sama sekali.</p>
+    <input type="text" name="username" placeholder="username" />
+    <input type="password" name="password" placeholder="password (min 6)" />
+    <button type="submit">Daftar</button>
+  </form>
+</body>
+</html>

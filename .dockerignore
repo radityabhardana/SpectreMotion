@@ -1,0 +1,17 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+data
+logs
+*.log
+.env
+cookies.txt
+*.mp4
+*.mov
+*.mkv
+.public_url

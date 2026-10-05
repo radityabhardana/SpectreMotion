@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SpectreMotion</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>SpectreMotion</h1>
+    <span class="sub">Ubah video panjang jadi klip vertikal otomatis</span>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Buat Job Baru</h2>
+      <form id="job-form" enctype="multipart/form-data">
+        <div class="tabs">
+          <label><input type="radio" name="source_type" value="file" checked /> Upload file</label>
+          <label><input type="radio" name="source_type" value="url" /> Link (YouTube dll)</label>
+        </div>
+
+        <div id="file-block">
+          <input type="file" name="file" accept="video/*" />
+        </div>
+        <div id="url-block" hidden>
+          <input type="url" name="url" placeholder="https://youtube.com/watch?v=..." />
+        </div>
+
+        <label class="field">Campaign
+          <select name="campaign_id">
+            <option value="none">— Tanpa aturan —</option>
+            {% for c in campaigns %}
+            <option value="{{ c.id }}">{{ c.name }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <button type="submit">Proses</button>
+        <span id="form-msg"></span>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Job</h2>
+      <table id="jobs-table">
+        <thead>
+          <tr><th>ID</th><th>Sumber</th><th>Campaign</th><th>Status</th><th>Progress</th></tr>
+        </thead>
+        <tbody>
+          {% for j in jobs %}
+          <tr onclick="location.href='/jobs/{{ j.id }}'">
+            <td class="mono">{{ j.id[:8] }}</td>
+            <td>{{ j.source_name or "(file)" }}</td>
+            <td>{{ j.campaign_id }}</td>
+            <td><span class="pill pill-{{ j.status }}">{{ j.status }}</span></td>
+            <td>{{ (j.progress * 100) | round(0) | int }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>Campaign dari teks S&amp;K</h2>
+      <p class="muted">Tempel syarat &amp; ketentuan / aturan brand, lalu compile jadi profil aturan.</p>
+      <textarea id="tos-text" placeholder="Tempel S&amp;K di sini (minimal ~80 karakter)..." style="min-height:120px"></textarea>
+      <div class="row">
+        <button id="btn-compile">🧠 Compile</button>
+        <button id="btn-compile-save">💾 Compile &amp; Simpan</button>
+      </div>
+      <p id="campaign-msg" class="muted"></p>
+      <pre id="campaign-preview" hidden></pre>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById('job-form');
+    const fileBlock = document.getElementById('file-block');
+    const urlBlock = document.getElementById('url-block');
+    document.querySelectorAll('input[name=source_type]').forEach(r => {
+      r.addEventListener('change', () => {
+        const isUrl = document.querySelector('input[name=source_type]:checked').value === 'url';
+        fileBlock.hidden = isUrl;
+        urlBlock.hidden = !isUrl;
+      });
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('form-msg');
+      msg.textContent = 'Mengunggah...';
+      const fd = new FormData(form);
+      try {
+        const res = await fetch('/api/jobs', { method: 'POST', body: fd });
+        if (!res.ok) throw new Error((await res.json()).detail || res.statusText);
+        const data = await res.json();
+        msg.textContent = 'Job dibuat: ' + data.job_id.slice(0,8);
+        setTimeout(() => location.href = '/jobs/' + data.job_id, 600);
+      } catch (err) {
+        msg.textContent = 'Error: ' + err.message;
+      }
+    });
+
+    async function compileCampaign(save){
+      const text = document.getElementById('tos-text').value;
+      const msg = document.getElementById('campaign-msg');
+      const pre = document.getElementById('campaign-preview');
+      if (text.trim().length < 20) { msg.textContent = 'Teks terlalu pendek.'; return; }
+      msg.textContent = 'Mengompilasi...';
+      try {
+        const res = await fetch('/api/campaigns/compile', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ text, save })
+        });
+        if (!res.ok) throw new Error((await res.json()).message || res.statusText);
+        const data = await res.json();
+        pre.hidden = false;
+        pre.textContent = JSON.stringify(data.profile || data, null, 2);
+        msg.textContent = data.saved ? ('Tersimpan sebagai: ' + data.saved) : 'Compile berhasil (belum disimpan)';
+      } catch (err) { msg.textContent = 'Error: ' + err.message; }
+    }
+    document.getElementById('btn-compile').onclick = () => compileCampaign(false);
+    document.getElementById('btn-compile-save').onclick = () => compileCampaign(true);
+  </script>
+</body>
+</html>

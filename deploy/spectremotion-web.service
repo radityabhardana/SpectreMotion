@@ -1,0 +1,19 @@
+[Unit]
+Description=SpectreMotion web (FastAPI)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=spectre
+WorkingDirectory=/opt/spectremotion
+EnvironmentFile=-/opt/spectremotion/.env
+Environment=OMP_NUM_THREADS=1
+ExecStart=/opt/spectremotion/.venv/bin/uvicorn app.web:app --host 127.0.0.1 --port 8080
+Restart=on-failure
+RestartSec=5
+# Safety net for a small VPS.
+MemoryMax=2000M
+
+[Install]
+WantedBy=multi-user.target

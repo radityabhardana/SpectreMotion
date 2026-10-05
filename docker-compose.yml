@@ -1,0 +1,53 @@
+services:
+  web:
+    build: .
+    image: spectremotion:latest
+    command: uvicorn app.web:app --host 0.0.0.0 --port 8080
+    env_file: .env
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./templates:/app/templates
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=4).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Exactly one heavy worker: video render/transcribe is CPU-bound.
+  worker:
+    build: .
+    image: spectremotion:latest
+    command: python -m app.worker
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+      - ./templates:/app/templates
+    depends_on:
+      web:
+        condition: service_started
+    restart: unless-stopped
+    # Uncomment on a small VPS to bound memory (leave headroom for ffmpeg).
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 3500M
+
+  # Optional TLS reverse proxy. Point APP_TOKEN/Caddyfile at your domain.
+  caddy:
+    image: caddy:2
+    profiles: ["proxy"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  caddy_data:

@@ -1,0 +1,26 @@
+[Unit]
+Description=SpectreMotion worker (transcribe + render)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=spectre
+WorkingDirectory=/opt/spectremotion
+EnvironmentFile=-/opt/spectremotion/.env
+# Pin math/omp threads: whisper + ffmpeg must not fan out on a small box.
+Environment=OMP_NUM_THREADS=1
+Environment=MKL_NUM_THREADS=1
+Environment=OPENBLAS_NUM_THREADS=1
+Environment=NUMEXPR_NUM_THREADS=1
+ExecStart=/opt/spectremotion/.venv/bin/python -m app.worker
+Restart=on-failure
+RestartSec=10
+# Low priority so the web UI stays responsive during renders.
+Nice=19
+IOSchedulingClass=idle
+MemoryMax=3500M
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

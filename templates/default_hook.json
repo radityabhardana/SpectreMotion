@@ -1,0 +1,35 @@
+{
+  "name": "Default Hook",
+  "hook": {
+    "font_name": "DejaVu Sans Bold",
+    "font_size": 64,
+    "font_color": "#FFFFFF",
+    "highlight_color": "#00FF66",
+    "box": true,
+    "box_color": "#000000",
+    "box_opacity": 0.55,
+    "box_border_w": 18,
+    "x": "(w-text_w)/2",
+    "y": "h*0.12",
+    "display_seconds": 3,
+    "position": "top",
+    "max_line_chars": 20,
+    "max_lines": 3
+  },
+  "subtitle": {
+    "mode": "karaoke",
+    "font_name": "DejaVu Sans Bold",
+    "font_size": 74,
+    "font_color": "#FFFFFF",
+    "highlight_color": "#00FF66",
+    "outline_color": "#000000",
+    "margin_v": 420,
+    "words_per_phrase": 4,
+    "text_transform": "upper"
+  },
+  "video": {
+    "background_blur": 20,
+    "overlay_enabled": true,
+    "width": 1080
+  }
+}

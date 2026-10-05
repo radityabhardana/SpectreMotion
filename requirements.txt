@@ -1,0 +1,27 @@
+# ---- Web (FastAPI) ----
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+jinja2==3.1.5
+
+# ---- Config ----
+python-dotenv==1.0.1
+
+# ---- Media pipeline ----
+# faster-whisper pulls ctranslate2; keep it CPU-friendly for laptops/small VPS.
+faster-whisper>=1.0
+# Only needed if you switch to the openai-whisper backend (not used by default).
+# torch==2.2.2 ; sys_platform != "darwin"
+# numpy==1.26.4
+
+# ---- HTTP (LLM calls) ----
+requests==2.32.3
+
+# ---- Optional: YouTube / link ingestion ----
+yt-dlp>=2024.1
+
+# ---- Optional: overlay rendering (hook/badge PNG via Pillow) ----
+pillow>=10.0.0
+
+# ---- Tests ----
+pytest>=8.0
