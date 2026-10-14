@@ -196,10 +196,13 @@ def build_ass(
     margin_v: int = 420,
     words_per_phrase: int = 4,
     text_transform: str = "upper",
+    box: bool = False,
 ) -> str:
     font_name = font_name or config.SUBTITLE_FONT_NAME
     def xf(t: str) -> str:
         return t.upper() if text_transform == "upper" else t
+    # BorderStyle 3 = opaque box behind text (uses OutlineColour as fill).
+    border_style = 3 if box else 1
     header = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {config.TARGET_WIDTH}
@@ -209,7 +212,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{font_name},{font_size},{_hex_to_ass_bgr(primary_color)},&H000000FF,{_hex_to_ass_bgr(outline_color)},&H64000000,-1,0,0,0,100,100,0,0,1,{outline_w},{shadow},2,60,60,{margin_v},1
+Style: Default,{font_name},{font_size},{_hex_to_ass_bgr(primary_color)},&H000000FF,{_hex_to_ass_bgr(outline_color)},&H64000000,-1,0,0,0,100,100,0,0,{border_style},{outline_w},{shadow},2,60,60,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -409,6 +412,7 @@ def render_clip(
         margin_v=int(sub_cfg.get("margin_v", 420)),
         words_per_phrase=int(sub_cfg.get("words_per_phrase", 4)),
         text_transform=sub_cfg.get("text_transform", "upper"),
+        box=bool(sub_cfg.get("box", False)),
     )
     ass_path.write_text(ass_doc, encoding="utf-8")
 

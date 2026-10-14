@@ -138,7 +138,7 @@
   <!-- Style editor modal -->
   <div class="modal-overlay" id="editor-modal" onclick="closeEditorModal(event)">
     <div class="modal-content modal-editor" onclick="event.stopPropagation()">
-      <div class="modal-header">
+      <div class="editor-header">
         <div>
           <h3 class="modal-title" id="ed-title">Atur gaya klip</h3>
           <p class="card-desc" id="ed-subtitle" style="margin: 2px 0 0; font-size: 12px;"></p>
@@ -146,146 +146,175 @@
         <button class="btn-close" onclick="closeEditor()">&times;</button>
       </div>
 
-      <div class="notice">
-        <b>Preview real-time.</b> Ubah font, warna, atau posisi — subtitle di video
-        langsung berubah. Klik <b>Render</b> untuk menaruh subtitle permanen ke file.
-      </div>
-
-      <div class="editor-layout">
-        <div>
+      <div class="editor-body">
+        <div class="editor-preview">
           <div class="phone-frame">
             <div class="phone-notch"></div>
             <video id="ed-video" playsinline muted loop style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; z-index:1;"></video>
             <div class="phone-safezone-guide" title="Area aman" style="z-index:3;"></div>
             <div class="sub-preview-box pos-bottom" id="live-sub-box" style="z-index:4;">
-              <div class="sub-preview-text" id="live-sub-text" style="color: #ffffff; font-family: 'Arial Bold', sans-serif; font-size: 20px;">
-                CONTOH KATA <span class="hi-word" id="live-hi-word" style="color: #ffe600;">HIGHLIGHT</span> DISINI
-              </div>
+              <div class="sub-preview-text" id="live-sub-text" style="color: #ffffff; font-family: 'Arial Bold', sans-serif; font-size: 20px;"></div>
             </div>
             <div style="position: absolute; bottom: 8px; width: 60px; height: 3px; background: rgba(255,255,255,0.25); border-radius: 999px; z-index:4;"></div>
           </div>
-          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
             <button type="button" class="btn btn-sm btn-secondary" id="ed-play-btn" onclick="toggleEditorVideo()">Putar video</button>
-            <span style="font-size: 11px; color: var(--text-3);" id="ed-video-status">Memuat video sumber...</span>
-          </div>
-          <div style="text-align: center; margin-top: 6px; font-size: 11px; color: var(--text-3);">
-            Preview real-time (subtitle asli, langsung berubah)
+            <span style="font-size: 11px; color: var(--text-3);" id="ed-video-status">Memuat video...</span>
           </div>
         </div>
 
         <div class="editor-controls">
-          <div class="editor-section">
-            <div class="editor-section-title">Preset</div>
-            <div class="preset-grid-mini">
-              <div class="preset-tile active" id="tile-hormozi" onclick="selectPreset('hormozi')">
-                <span class="preset-tile-name">Hormozi</span>
-                <span class="preset-tile-desc">Kuning tebal, 2 kata</span>
-              </div>
-              <div class="preset-tile" id="tile-capcut" onclick="selectPreset('capcut')">
-                <span class="preset-tile-name">CapCut</span>
-                <span class="preset-tile-desc">Hijau, 3 kata</span>
-              </div>
-              <div class="preset-tile" id="tile-neon" onclick="selectPreset('neon_badge')">
-                <span class="preset-tile-name">Neon</span>
-                <span class="preset-tile-desc">Cyan modern</span>
-              </div>
-              <div class="preset-tile" id="tile-cinematic" onclick="selectPreset('cinematic')">
-                <span class="preset-tile-name">Cinematic</span>
-                <span class="preset-tile-desc">Emas, tengah</span>
-              </div>
-              <div class="preset-tile" id="tile-minimal" onclick="selectPreset('minimal')">
-                <span class="preset-tile-name">Minimal</span>
-                <span class="preset-tile-desc">Putih, tanpa outline</span>
-              </div>
-            </div>
+          <div class="editor-tabs">
+            <button type="button" class="editor-tab active" data-tab="text" onclick="setEditorTab('text')">Gaya Teks</button>
+            <button type="button" class="editor-tab" data-tab="motion" onclick="setEditorTab('motion')">Posisi &amp; Gerak</button>
+            <button type="button" class="editor-tab" data-tab="color" onclick="setEditorTab('color')">Warna</button>
           </div>
 
-          <div class="editor-section">
-            <div class="editor-section-title">Posisi subtitle</div>
-            <div class="seg-group">
-              <button type="button" class="seg-btn active" id="pos-btn-bottom" onclick="setSubtitlePosition('bottom')">Bawah</button>
-              <button type="button" class="seg-btn" id="pos-btn-center" onclick="setSubtitlePosition('center')">Tengah</button>
-              <button type="button" class="seg-btn" id="pos-btn-top" onclick="setSubtitlePosition('top')">Atas</button>
-            </div>
-          </div>
-
-          <div class="editor-section">
-            <div class="editor-section-title">Warna sorotan kata</div>
-            <div class="color-swatches">
-              <button type="button" class="color-circle active" style="background: #FFE600;" onclick="setHighlightColor('#FFE600')"></button>
-              <button type="button" class="color-circle" style="background: #00FF88;" onclick="setHighlightColor('#00FF88')"></button>
-              <button type="button" class="color-circle" style="background: #00E5FF;" onclick="setHighlightColor('#00E5FF')"></button>
-              <button type="button" class="color-circle" style="background: #FF3366;" onclick="setHighlightColor('#FF3366')"></button>
-              <button type="button" class="color-circle" style="background: #F5C518;" onclick="setHighlightColor('#F5C518')"></button>
-              <button type="button" class="color-circle" style="background: #FFFFFF;" onclick="setHighlightColor('#FFFFFF')"></button>
-              <input type="color" id="ed-color-custom" class="color-picker-custom" value="#FFE600" onchange="setHighlightColor(this.value)" />
-              <span id="ed-color-hex" style="font-size: 12px; color: var(--text-2); margin-left: 4px;">#FFE600</span>
-            </div>
-          </div>
-
-          <div class="editor-section">
-            <div class="editor-section-title">Panjang frasa</div>
-            <div class="seg-group">
-              <button type="button" class="seg-btn" id="split-btn-1" onclick="setWordsPerPhrase(1)">1 kata</button>
-              <button type="button" class="seg-btn active" id="split-btn-2" onclick="setWordsPerPhrase(2)">2–3 kata</button>
-              <button type="button" class="seg-btn" id="split-btn-4" onclick="setWordsPerPhrase(4)">4–5 kata</button>
-            </div>
-          </div>
-
-          <div class="editor-section">
-            <div class="editor-section-title">Font</div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
-              <div>
-                <label style="font-size: 11px; color: var(--text-3);">Jenis</label>
-                <select id="ed-font-family" style="width: 100%; margin-top: 4px;" onchange="setFontFamily(this.value)">
-                  <option value="Arial Bold">Arial Bold</option>
-                  <option value="Impact">Impact</option>
-                  <option value="Segoe UI Bold">Segoe UI Bold</option>
-                  <option value="Trebuchet MS Bold">Trebuchet MS Bold</option>
-                  <option value="Tahoma Bold">Tahoma Bold</option>
-                </select>
-              </div>
-              <div>
-                <label style="font-size: 11px; color: var(--text-3);">Ukuran</label>
-                <div class="range-wrap" style="margin-top: 6px;">
-                  <input type="range" id="ed-font-size" min="50" max="95" value="76" oninput="setFontSize(this.value)" />
-                  <span class="range-val" id="ed-font-size-val">76px</span>
+          <!-- Tab: Gaya Teks -->
+          <div class="editor-panel" data-tab="text">
+            <div class="editor-section">
+              <div class="editor-section-title">Preset</div>
+              <p class="editor-hint">Cara cepat: pilih salah satu, semua diatur otomatis.</p>
+              <div class="preset-grid-mini">
+                <div class="preset-tile active" id="tile-hormozi" onclick="selectPreset('hormozi')">
+                  <span class="preset-tile-name">Hormozi</span>
+                  <span class="preset-tile-desc">Kuning tebal, 2 kata</span>
+                </div>
+                <div class="preset-tile" id="tile-capcut" onclick="selectPreset('capcut')">
+                  <span class="preset-tile-name">CapCut</span>
+                  <span class="preset-tile-desc">Hijau, 3 kata</span>
+                </div>
+                <div class="preset-tile" id="tile-neon" onclick="selectPreset('neon_badge')">
+                  <span class="preset-tile-name">Neon</span>
+                  <span class="preset-tile-desc">Cyan modern</span>
+                </div>
+                <div class="preset-tile" id="tile-cinematic" onclick="selectPreset('cinematic')">
+                  <span class="preset-tile-name">Cinematic</span>
+                  <span class="preset-tile-desc">Emas, tengah</span>
+                </div>
+                <div class="preset-tile" id="tile-minimal" onclick="selectPreset('minimal')">
+                  <span class="preset-tile-name">Minimal</span>
+                  <span class="preset-tile-desc">Putih, tanpa outline</span>
                 </div>
               </div>
             </div>
-            <div style="display: flex; gap: 20px; margin-top: 6px;">
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
-                <input type="checkbox" id="ed-all-caps" checked onchange="setAllCaps(this.checked)" />
-                <span>Huruf besar</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
-                <input type="checkbox" id="ed-karaoke" checked onchange="setKaraoke(this.checked)" />
-                <span>Karaoke</span>
-              </label>
+
+            <div class="editor-section">
+              <div class="editor-section-title">Font</div>
+              <p class="editor-hint">Nama font, ukuran, dan garis tepi teks.</p>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
+                <div>
+                  <label style="font-size: 11px; color: var(--text-3);">Jenis</label>
+                  <select id="ed-font-family" style="width: 100%; margin-top: 4px;" onchange="setFontFamily(this.value)">
+                    <option value="Arial Bold">Arial Bold</option>
+                    <option value="Impact">Impact</option>
+                    <option value="Segoe UI Bold">Segoe UI Bold</option>
+                    <option value="Trebuchet MS Bold">Trebuchet MS Bold</option>
+                    <option value="Tahoma Bold">Tahoma Bold</option>
+                  </select>
+                </div>
+                <div>
+                  <label style="font-size: 11px; color: var(--text-3);">Ukuran</label>
+                  <div class="range-wrap" style="margin-top: 6px;">
+                    <input type="range" id="ed-font-size" min="50" max="95" value="76" oninput="setFontSize(this.value)" />
+                    <span class="range-val" id="ed-font-size-val">76px</span>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size: 11px; color: var(--text-3);">Tebal outline</label>
+                  <div class="range-wrap" style="margin-top: 6px;">
+                    <input type="range" id="ed-outline-w" min="0" max="8" value="5" oninput="setOutlineWidth(this.value)" />
+                    <span class="range-val" id="ed-outline-w-val">5px</span>
+                  </div>
+                </div>
+                <div>
+                  <label style="font-size: 11px; color: var(--text-3);">Warna outline</label>
+                  <div class="color-swatches" style="margin-top: 6px;">
+                    <input type="color" id="ed-outline-color" class="color-picker-custom" value="#000000" onchange="setOutlineColor(this.value)" />
+                    <span id="ed-outline-color-hex" style="font-size: 12px; color: var(--text-2);">#000000</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display: flex; gap: 18px; margin-top: 10px; flex-wrap: wrap;">
+                <label class="chk"><input type="checkbox" id="ed-all-caps" checked onchange="setAllCaps(this.checked)" /><span>Huruf besar</span></label>
+                <label class="chk"><input type="checkbox" id="ed-karaoke" checked onchange="setKaraoke(this.checked)" /><span>Karaoke</span></label>
+                <label class="chk"><input type="checkbox" id="ed-box" onchange="setBox(this.checked)" /><span>Kotak latar</span></label>
+              </div>
             </div>
           </div>
 
-          <div class="editor-section">
-            <div class="editor-section-title">Framing</div>
-            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
-                <input type="checkbox" id="ed-facetrack" checked />
-                <span>Face tracking</span>
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
-                <input type="checkbox" id="ed-zoom" checked />
-                <span>Dynamic zoom</span>
-              </label>
+          <!-- Tab: Posisi & Gerak -->
+          <div class="editor-panel" data-tab="motion" hidden>
+            <div class="editor-section">
+              <div class="editor-section-title">Posisi subtitle</div>
+              <p class="editor-hint">Lokasi teks di layar.</p>
+              <div class="seg-group">
+                <button type="button" class="seg-btn active" id="pos-btn-bottom" onclick="setSubtitlePosition('bottom')">Bawah</button>
+                <button type="button" class="seg-btn" id="pos-btn-center" onclick="setSubtitlePosition('center')">Tengah</button>
+                <button type="button" class="seg-btn" id="pos-btn-top" onclick="setSubtitlePosition('top')">Atas</button>
+              </div>
+            </div>
+
+            <div class="editor-section">
+              <div class="editor-section-title">Transisi subtitle</div>
+              <p class="editor-hint">Cara teks muncul saat berganti.</p>
+              <div class="seg-group">
+                <button type="button" class="seg-btn active" id="tran-btn-None" onclick="setTransition('none')">None</button>
+                <button type="button" class="seg-btn" id="tran-btn-word-bounce" onclick="setTransition('bounce')">Word Bounce</button>
+                <button type="button" class="seg-btn" id="tran-btn-slide-up" onclick="setTransition('slide')">Slide Up</button>
+              </div>
+            </div>
+
+            <div class="editor-section">
+              <div class="editor-section-title">Panjang frasa</div>
+              <p class="editor-hint">Berapa kata ditampilkan sekaligus.</p>
+              <div class="seg-group">
+                <button type="button" class="seg-btn" id="split-btn-1" onclick="setWordsPerPhrase(1)">1 kata</button>
+                <button type="button" class="seg-btn active" id="split-btn-2" onclick="setWordsPerPhrase(2)">2–3 kata</button>
+                <button type="button" class="seg-btn" id="split-btn-4" onclick="setWordsPerPhrase(4)">4–5 kata</button>
+              </div>
+            </div>
+
+            <div class="editor-section">
+              <div class="editor-section-title">Framing</div>
+              <p class="editor-hint">Ikuti wajah &amp; zoom otomatis agar tetap di tengah.</p>
+              <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                <label class="chk"><input type="checkbox" id="ed-facetrack" checked /><span>Face tracking</span></label>
+                <label class="chk"><input type="checkbox" id="ed-zoom" checked /><span>Dynamic zoom</span></label>
+              </div>
             </div>
           </div>
 
-          <div class="editor-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeEditor()">Batal</button>
-            <button type="button" class="btn btn-render" id="btn-submit-render" onclick="submitCustomRender()">Render klip ini</button>
+          <!-- Tab: Warna -->
+          <div class="editor-panel" data-tab="color" hidden>
+            <div class="editor-section">
+              <div class="editor-section-title">Warna</div>
+              <p class="editor-hint">Sorotan = kata yang sedang di-highlight.</p>
+              <label style="font-size: 11px; color: var(--text-3);">Sorotan kata</label>
+              <div class="color-swatches" style="margin: 6px 0 14px;">
+                <button type="button" class="color-circle active" style="background: #FFE600;" onclick="setHighlightColor('#FFE600')"></button>
+                <button type="button" class="color-circle" style="background: #00FF88;" onclick="setHighlightColor('#00FF88')"></button>
+                <button type="button" class="color-circle" style="background: #00E5FF;" onclick="setHighlightColor('#00E5FF')"></button>
+                <button type="button" class="color-circle" style="background: #FF3366;" onclick="setHighlightColor('#FF3366')"></button>
+                <button type="button" class="color-circle" style="background: #F5C518;" onclick="setHighlightColor('#F5C518')"></button>
+                <button type="button" class="color-circle" style="background: #FFFFFF;" onclick="setHighlightColor('#FFFFFF')"></button>
+                <input type="color" id="ed-color-custom" class="color-picker-custom" value="#FFE600" onchange="setHighlightColor(this.value)" />
+              </div>
+              <label style="font-size: 11px; color: var(--text-3);">Warna teks</label>
+              <div class="color-swatches" style="margin-top: 6px;">
+                <input type="color" id="ed-text-color" class="color-picker-custom" value="#FFFFFF" onchange="setTextColor(this.value)" />
+                <span id="ed-text-color-hex" style="font-size: 12px; color: var(--text-2);">#FFFFFF</span>
+              </div>
+            </div>
           </div>
-          <p class="card-desc" style="text-align: right; margin: 6px 0 0; font-size: 11px;">
-            Ganti font/preset dulu, lalu klik Render. Tunggu status klip jadi "Siap".
-          </p>
+        </div>
+      </div>
+
+      <div class="editor-footer">
+        <span class="hint">Ubah gaya → preview berubah langsung.</span>
+        <div class="editor-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeEditor()">Batal</button>
+          <button type="button" class="btn btn-render" id="btn-submit-render" onclick="submitCustomRender()">Render klip ini</button>
         </div>
       </div>
     </div>
@@ -322,6 +351,8 @@
       highlightColor: '#FFE600', wordsPerPhrase: 2, fontName: 'Arial Bold',
       fontSize: 76, allCaps: true, karaoke: true, faceTracking: true, dynamicZoom: true,
       words: [], wordsLoaded: false,
+      textColor: '#FFFFFF', outlineColor: '#000000', outlineW: 5,
+      boxBg: false, transition: 'none',
     };
 
     function showToast(message, type = 'normal') {
@@ -345,10 +376,18 @@
       editorState.wordsLoaded = false;
       document.getElementById('ed-title').textContent = 'Atur gaya klip #' + idx;
       document.getElementById('ed-subtitle').textContent = 'Skor ' + (score || 0) + '/100 · ' + (duration || 0) + ' detik';
+      setEditorTab('text');
       updateLivePreview();
       loadEditorVideo(clipId);
       loadClipWords(clipId);
       document.getElementById('editor-modal').classList.add('open');
+    }
+
+    function setEditorTab(name) {
+      document.querySelectorAll('.editor-tab').forEach(t =>
+        t.classList.toggle('active', t.dataset.tab === name));
+      document.querySelectorAll('.editor-panel').forEach(p =>
+        p.hidden = p.dataset.tab !== name);
     }
 
     async function loadClipWords(clipId) {
@@ -405,6 +444,16 @@
       if (!el || !box) return;
       box.className = 'sub-preview-box pos-' + editorState.position;
 
+      // Box background toggle.
+      const ow = editorState.outlineW || 0;
+      const stroke = ow > 0
+        ? '-1px -1px 0 ' + editorState.outlineColor + ',' + '1px -1px 0 ' + editorState.outlineColor + ',' +
+          '-1px 1px 0 ' + editorState.outlineColor + ',' + '1px 1px 0 ' + editorState.outlineColor
+        : 'none';
+      el.style.textShadow = stroke;
+      el.style.background = editorState.boxBg ? 'rgba(0,0,0,0.6)' : 'transparent';
+      el.style.padding = editorState.boxBg ? '6px 12px' : '0';
+
       if (!editorState.wordsLoaded) { el.textContent = ''; return; }
       if (!editorState.words.length) {
         el.innerHTML = '<span style="opacity:.6">(tidak ada subtitle terdeteksi di klip ini)</span>';
@@ -420,9 +469,14 @@
       const parts = active.map(w => {
         const hot = (t >= w.start && t < w.end);
         const word = editorState.allCaps ? (w.text || '').toUpperCase() : (w.text || '');
-        return hot
-          ? `<span class="hi-word" style="color:${editorState.highlightColor}">${esc(word)}</span>`
-          : `<span>${esc(word)}</span>`;
+        if (!hot) {
+          return `<span style="color:${editorState.textColor}">${esc(word)}</span>`;
+        }
+        // Base colour = text colour; highlight overlay per transition style.
+        let anim = '';
+        if (editorState.transition === 'bounce') anim = ';display:inline-block;transform:translateY(-6px) scale(1.15)';
+        else if (editorState.transition === 'slide') anim = ';display:inline-block;transform:translateY(-4px)';
+        return `<span class="hi-word" style="color:${editorState.highlightColor}${anim}">${esc(word)}</span>`;
       });
       el.innerHTML = parts.join(' ');
     }
@@ -443,10 +497,11 @@
 
     function updateLivePreview() {
       const text = document.getElementById('live-sub-text');
+      if (!text) return;
       text.style.fontFamily = `'${editorState.fontName}', sans-serif`;
       text.style.fontSize = Math.max(14, Math.round(editorState.fontSize * 0.26)) + 'px';
-      document.getElementById('ed-color-hex').textContent = editorState.highlightColor.toUpperCase();
-      document.getElementById('ed-color-custom').value = editorState.highlightColor;
+      const custom = document.getElementById('ed-color-custom');
+      if (custom) custom.value = editorState.highlightColor;
       renderSubtitleOverlay();
     }
 
@@ -506,6 +561,18 @@
     function setFontSize(sz) { editorState.fontSize = parseInt(sz); document.getElementById('ed-font-size-val').textContent = sz + 'px'; updateLivePreview(); }
     function setAllCaps(b) { editorState.allCaps = b; updateLivePreview(); }
     function setKaraoke(b) { editorState.karaoke = b; }
+    function setTextColor(c) { editorState.textColor = c; document.getElementById('ed-text-color-hex').textContent = c.toUpperCase(); updateLivePreview(); }
+    function setOutlineWidth(v) { editorState.outlineW = parseInt(v); document.getElementById('ed-outline-w-val').textContent = v + 'px'; updateLivePreview(); }
+    function setOutlineColor(c) { editorState.outlineColor = c; document.getElementById('ed-outline-color-hex').textContent = c.toUpperCase(); updateLivePreview(); }
+    function setBox(b) { editorState.boxBg = b; updateLivePreview(); }
+    function setTransition(t) {
+      editorState.transition = t;
+      ['None', 'word-bounce', 'slide-up'].forEach(k => {
+        const b = document.getElementById('tran-btn-' + k);
+        if (b) b.classList.toggle('active', k === ({none:'None',bounce:'word-bounce',slide:'slide-up'}[t] || 'None'));
+      });
+      updateLivePreview();
+    }
 
     async function submitCustomRender() {
       const clipId = editorState.clipId;
@@ -516,9 +583,13 @@
           position: editorState.position,
           subtitle: {
             font_name: editorState.fontName, font_size: editorState.fontSize,
+            font_color: editorState.textColor,
             highlight_color: editorState.highlightColor, words_per_phrase: editorState.wordsPerPhrase,
+            outline_color: editorState.outlineColor, outline_w: editorState.outlineW,
             text_transform: editorState.allCaps ? 'upper' : 'none',
             mode: editorState.karaoke ? 'karaoke' : 'line',
+            transition: editorState.transition,
+            box: editorState.boxBg,
           },
           video: {
             face_tracking: document.getElementById('ed-facetrack').checked,

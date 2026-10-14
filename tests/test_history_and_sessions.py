@@ -3,10 +3,35 @@
 import uuid
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app import config, storage
 from app.web import app
+
+
+@pytest.fixture(autouse=True)
+def _isolate(tmp_path, monkeypatch):
+    """Redirect ALL storage paths to a temp dir so tests never touch the real
+    data/app.db. Point every module that reads DB_PATH at the temp DB too."""
+    dbp = tmp_path / "app.db"
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(config, "DB_PATH", dbp)
+    monkeypatch.setattr(config, "UPLOAD_DIR", tmp_path / "uploads")
+    monkeypatch.setattr(config, "OUTPUT_DIR", tmp_path / "output")
+    monkeypatch.setattr(config, "WORK_DIR", tmp_path / "work")
+    monkeypatch.setattr(config, "TRANSCRIPT_CACHE_DIR", tmp_path / "cache")
+    for d in (config.UPLOAD_DIR, config.OUTPUT_DIR, config.WORK_DIR):
+        d.mkdir(parents=True, exist_ok=True)
+    # Modules that connect with their own DB_PATH
+    monkeypatch.setattr(storage.config, "DB_PATH", dbp)
+    from app.db import migrate
+    monkeypatch.setattr(migrate.config, "DB_PATH", dbp)
+    for modname in ("queue_sqlite", "events_memory"):
+        m = __import__(f"app.adapters.{modname}", fromlist=["config"])
+        monkeypatch.setattr(m.config, "DB_PATH", dbp)
+    yield
+
 
 client = TestClient(app)
 
