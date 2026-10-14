@@ -1,10 +1,12 @@
 name: CI
 
+# DISABLED FOR AUTO-RUN: push/PR triggers are commented out so this does NOT
+# run on every push (no GitHub email spam). Re-enable by uncommenting.
 on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  # pull_request:
+  workflow_dispatch:   # manual trigger only
 
 jobs:
   test:

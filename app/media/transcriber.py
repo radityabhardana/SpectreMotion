@@ -66,6 +66,39 @@ class Transcript:
 
 _model = None
 
+# Map a whisper size name to its HF repo id, so we can find a locally
+# downloaded copy and load it WITHOUT touching the network (works around
+# ISPs that blackhole cdn-lfs.huggingface.co).
+_WHISPER_REPOS = {
+    "tiny": "Systran/faster-whisper-tiny",
+    "base": "Systran/faster-whisper-base",
+    "small": "Systran/faster-whisper-small",
+    "medium": "Systran/faster-whisper-medium",
+    "large-v3": "Systran/faster-whisper-large-v3",
+}
+
+
+def _local_model_dir(model_name: str) -> Optional[Path]:
+    """Return a local snapshot dir for a whisper size, if present on disk."""
+    repo = _WHISPER_REPOS.get(model_name)
+    if not repo:
+        return None
+    import os
+    hf_home = os.environ.get("HF_HOME")
+    root = (Path(hf_home) / "hub") if hf_home else (Path.home() / ".cache" / "huggingface" / "hub")
+    repo_dir = root / ("models--" + repo.replace("/", "--"))
+    for snap in ("main",):
+        candidate = repo_dir / "snapshots" / snap
+        if (candidate / "model.bin").is_file():
+            return candidate
+    # fall back to any snapshot with a model.bin
+    snaps = repo_dir / "snapshots"
+    if snaps.is_dir():
+        for child in snaps.iterdir():
+            if (child / "model.bin").is_file():
+                return child
+    return None
+
 
 def _get_model():
     global _model
@@ -77,10 +110,21 @@ def _get_model():
         raise TranscriptionError(
             "faster-whisper belum terinstall. Jalankan: pip install faster-whisper"
         ) from exc
-    log.info("Loading whisper model=%s device=%s compute=%s",
-             config.WHISPER_MODEL, config.WHISPER_DEVICE, config.WHISPER_COMPUTE_TYPE)
+
+    # Prefer a local copy to avoid a network round-trip on load.
+    local_dir = _local_model_dir(config.WHISPER_MODEL)
+    source = str(local_dir) if local_dir else config.WHISPER_MODEL
+    log.info("Loading whisper model=%s (source=%s) device=%s compute=%s",
+             config.WHISPER_MODEL, "local" if local_dir else "remote",
+             config.WHISPER_DEVICE, config.WHISPER_COMPUTE_TYPE)
+
+    # If we have a local copy, tell huggingface_hub not to hit the network.
+    if local_dir:
+        import os
+        os.environ.setdefault("HF_HUB_OFFLINE", "1")
+
     _model = WhisperModel(
-        config.WHISPER_MODEL,
+        source,
         device=config.WHISPER_DEVICE,
         compute_type=config.WHISPER_COMPUTE_TYPE,
         cpu_threads=max(1, config.FFMPEG_THREADS),
@@ -89,14 +133,18 @@ def _get_model():
     return _model
 
 
-def extract_audio(video_path: Path, out_wav: Path) -> Path:
+def extract_audio(video_path: Path, out_wav: Path, *, token=None) -> Path:
     cmd = [
         "ffmpeg", "-y", "-hide_banner", "-loglevel", "error",
         "-i", str(video_path),
         "-vn", "-ac", "1", "-ar", "16000", "-c:a", "pcm_s16le",
         str(out_wav),
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    if token is not None:
+        from app.cancel import run as _run
+        proc = _run(cmd, token=token, timeout=600)
+    else:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
     if proc.returncode != 0:
         raise TranscriptionError(f"ffmpeg audio extract gagal: {proc.stderr.strip()}")
     return out_wav
@@ -152,8 +200,10 @@ def _transcript_from_json(data: dict, model: str) -> Optional[Transcript]:
 
 # ---- Main ----------------------------------------------------------------
 
-def transcribe(video_path: Path, work_dir: Path, *, use_cache: bool = True) -> Transcript:
+def transcribe(video_path: Path, work_dir: Path, *, use_cache: bool = True, token=None) -> Transcript:
     config.TRANSCRIPT_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    if token is not None:
+        token.check()
     key = _cache_key(video_path, config.WHISPER_MODEL, config.WHISPER_LANGUAGE)
     cache_file = _cache_path(key)
 
@@ -169,7 +219,7 @@ def transcribe(video_path: Path, work_dir: Path, *, use_cache: bool = True) -> T
             log.warning("Cache rusak, re-transcribe: %s", exc)
 
     wav = work_dir / "audio.wav"
-    extract_audio(video_path, wav)
+    extract_audio(video_path, wav, token=token)
     model = _get_model()
     started = time.time()
 
@@ -189,6 +239,8 @@ def transcribe(video_path: Path, work_dir: Path, *, use_cache: bool = True) -> T
     kept: list[Segment] = []
     dropped = 0
     for seg in segments_iter:
+        if token is not None:
+            token.check()  # cooperative cancel while streaming segments
         no_speech = float(getattr(seg, "no_speech_prob", 0.0) or 0.0)
         avg_logprob = float(getattr(seg, "avg_logprob", 0.0) or 0.0)
         if avg_logprob < -2.0 and no_speech > 0.90:

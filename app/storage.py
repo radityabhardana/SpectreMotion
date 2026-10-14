@@ -247,6 +247,196 @@ def claim_next_job() -> Optional[Job]:
     return job
 
 
+def delete_job(job_id: str) -> bool:
+    """Permanently delete a job and all its related database records."""
+    with _lock, _connect() as conn:
+        conn.execute("DELETE FROM clips WHERE job_id=?", (job_id,))
+        conn.execute("DELETE FROM job_events WHERE job_id=?", (job_id,))
+        conn.execute("DELETE FROM job_stages WHERE job_id=?", (job_id,))
+        res = conn.execute("DELETE FROM jobs WHERE id=?", (job_id,))
+        conn.commit()
+        return res.rowcount > 0
+
+
+def delete_job_and_assets(job_id: str) -> dict[str, Any]:
+    """Permanently delete a job, all its rendered MP4 clips, source video, temp dirs, and DB records."""
+    import shutil
+    from app import config
+
+    deleted_files = 0
+    freed_bytes = 0
+
+    job = get_job(job_id)
+    clips = list_clips(job_id)
+
+    # 1. Delete all rendered clip video files
+    for c in clips:
+        if c.output_path:
+            p = Path(c.output_path)
+            if p.is_file():
+                try:
+                    freed_bytes += p.stat().st_size
+                    p.unlink(missing_ok=True)
+                    deleted_files += 1
+                except OSError:
+                    pass
+
+    # Check for any remaining files with this job_id in output dir
+    if config.OUTPUT_DIR.is_dir():
+        for p in config.OUTPUT_DIR.glob(f"{job_id}*"):
+            if p.is_file():
+                try:
+                    freed_bytes += p.stat().st_size
+                    p.unlink(missing_ok=True)
+                    deleted_files += 1
+                except OSError:
+                    pass
+
+    # 2. Delete source video file
+    if job and job.source_path:
+        sp = Path(job.source_path)
+        if sp.is_file():
+            try:
+                freed_bytes += sp.stat().st_size
+                sp.unlink(missing_ok=True)
+                deleted_files += 1
+            except OSError:
+                pass
+
+    if config.UPLOAD_DIR.is_dir():
+        for p in config.UPLOAD_DIR.glob(f"{job_id}*"):
+            if p.is_file():
+                try:
+                    freed_bytes += p.stat().st_size
+                    p.unlink(missing_ok=True)
+                    deleted_files += 1
+                except OSError:
+                    pass
+
+    # 3. Clean temporary work directories
+    if config.WORK_DIR.is_dir():
+        shutil.rmtree(config.WORK_DIR / job_id, ignore_errors=True)
+        shutil.rmtree(config.WORK_DIR / f"recover_{job_id}", ignore_errors=True)
+
+    # 4. Clean database records (job + clips + events + stages + child clip render jobs)
+    with _lock, _connect() as conn:
+        child_rows = conn.execute(
+            "SELECT id FROM jobs WHERE settings_json LIKE ?",
+            (f'%"{job_id}"%',),
+        ).fetchall()
+        for r in child_rows:
+            conn.execute("DELETE FROM clips WHERE job_id=?", (r["id"],))
+            conn.execute("DELETE FROM job_events WHERE job_id=?", (r["id"],))
+            conn.execute("DELETE FROM job_stages WHERE job_id=?", (r["id"],))
+            conn.execute("DELETE FROM jobs WHERE id=?", (r["id"],))
+
+        conn.execute("DELETE FROM clips WHERE job_id=?", (job_id,))
+        conn.execute("DELETE FROM job_events WHERE job_id=?", (job_id,))
+        conn.execute("DELETE FROM job_stages WHERE job_id=?", (job_id,))
+        conn.execute("DELETE FROM jobs WHERE id=?", (job_id,))
+        conn.commit()
+
+    return {
+        "ok": True,
+        "deleted_files": deleted_files,
+        "freed_mb": round(freed_bytes / (1024 * 1024), 2),
+    }
+
+
+def delete_jobs_batch(job_ids: list[str]) -> dict:
+    total_deleted_files = 0
+    total_freed_mb = 0.0
+    deleted_jobs = 0
+    for jid in job_ids:
+        res = delete_job_and_assets(jid)
+        if res.get("ok"):
+            deleted_jobs += 1
+            total_deleted_files += res.get("deleted_files", 0)
+            total_freed_mb += res.get("freed_mb", 0.0)
+    return {
+        "ok": True,
+        "deleted_jobs": deleted_jobs,
+        "deleted_files": total_deleted_files,
+        "freed_mb": round(total_freed_mb, 2),
+    }
+
+
+def delete_clip_and_assets(clip_id: str) -> dict:
+    clip = get_clip(clip_id)
+    if not clip:
+        return {"ok": False, "error": "Clip tidak ditemukan"}
+    deleted_files = 0
+    freed_bytes = 0
+    if clip.output_path:
+        p = Path(clip.output_path)
+        if p.is_file():
+            try:
+                freed_bytes += p.stat().st_size
+                p.unlink(missing_ok=True)
+                deleted_files += 1
+            except OSError:
+                pass
+    with _lock, _connect() as conn:
+        conn.execute("DELETE FROM clips WHERE id=?", (clip_id,))
+        conn.commit()
+    return {
+        "ok": True,
+        "deleted_files": deleted_files,
+        "freed_mb": round(freed_bytes / (1024 * 1024), 2),
+    }
+
+
+def delete_clips_batch(clip_ids: list[str]) -> dict:
+    deleted_clips = 0
+    deleted_files = 0
+    freed_mb = 0.0
+    for cid in clip_ids:
+        res = delete_clip_and_assets(cid)
+        if res.get("ok"):
+            deleted_clips += 1
+            deleted_files += res.get("deleted_files", 0)
+            freed_mb += res.get("freed_mb", 0.0)
+    return {
+        "ok": True,
+        "deleted_clips": deleted_clips,
+        "deleted_files": deleted_files,
+        "freed_mb": round(freed_mb, 2),
+    }
+
+
+def list_sessions_with_stats(limit: int = 100) -> list[dict]:
+    """List original video sessions with total clips and rendered clips counts."""
+    with _connect() as conn:
+        rows = conn.execute(
+            """SELECT j.*,
+                      COUNT(c.id) as total_clips,
+                      SUM(CASE WHEN c.rendered = 1 THEN 1 ELSE 0 END) as rendered_clips
+               FROM jobs j
+               LEFT JOIN clips c ON c.job_id = j.id
+               WHERE j.source_type != 'clip_render'
+               GROUP BY j.id
+               ORDER BY j.created_at DESC LIMIT ?""",
+            (limit,)
+        ).fetchall()
+        return [
+            {
+                "id": r["id"],
+                "created_at": r["created_at"],
+                "updated_at": r["updated_at"],
+                "status": r["status"],
+                "stage": r["stage"],
+                "progress": r["progress"],
+                "source_type": r["source_type"],
+                "source_name": r["source_name"] or r["source_url"] or "(file)",
+                "source_url": r["source_url"],
+                "source_path": r["source_path"],
+                "total_clips": int(r["total_clips"] or 0),
+                "rendered_clips": int(r["rendered_clips"] or 0),
+            }
+            for r in rows
+        ]
+
+
 # ---- Clips ----
 
 def add_clip(job_id: str, clip: Clip) -> None:

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Riwayat — SpectreMotion</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M4 4.5l10 7.5-10 7.5V4.5zm8 0l10 7.5-10 7.5V4.5z"/></svg>
+      </div>
+      <h1>SpectreMotion</h1>
+    </a>
+    <nav class="nav-links">
+      <a href="/" class="nav-link">Generator</a>
+      <a href="/history" class="nav-link active">Riwayat</a>
+      <a href="/hook-studio" class="nav-link">Hook Studio</a>
+    </nav>
+  </header>
+
+  <main>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px;">
+      <div class="page-head">
+        <h1 class="page-title">Riwayat sesi</h1>
+        <p class="page-desc">Setiap video yang diproses tersimpan sebagai sesi. Pilih beberapa untuk dihapus.</p>
+      </div>
+      <a href="/" class="btn btn-sm">Video baru</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+      <div class="card" style="padding: 14px 18px;">
+        <span style="font-size: 12px; color: var(--text-3);">Total sesi</span>
+        <div style="font-size: 24px; font-weight: 600; margin-top: 2px;" id="stat-total-sessions">{{ sessions|length }}</div>
+      </div>
+      <div class="card" style="padding: 14px 18px;">
+        <span style="font-size: 12px; color: var(--text-3);">Momen tersimpan</span>
+        <div style="font-size: 24px; font-weight: 600; margin-top: 2px;" id="stat-total-clips">{{ sessions | sum(attribute='total_clips') }}</div>
+      </div>
+      <div class="card" style="padding: 14px 18px;">
+        <span style="font-size: 12px; color: var(--text-3);">Klip selesai</span>
+        <div style="font-size: 24px; font-weight: 600; margin-top: 2px;" id="stat-rendered-clips">{{ sessions | sum(attribute='rendered_clips') }}</div>
+      </div>
+    </div>
+
+    <section class="card">
+      <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2>Sesi tersimpan</h2>
+        </div>
+        <div style="min-width: 220px;">
+          <input type="text" id="session-search" placeholder="Cari nama video..." oninput="filterSessions()" />
+        </div>
+      </div>
+
+      <div class="bulk-toolbar" id="bulk-toolbar" style="{% if not sessions %}display: none;{% endif %}">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label class="select-all-label">
+            <input type="checkbox" id="check-all" class="custom-checkbox" onchange="toggleSelectAll(this)" />
+            <span>Pilih semua</span>
+          </label>
+          <span class="selected-count-badge" id="selected-count-badge" style="display: none;">0 dipilih</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-clear-selection" onclick="clearSelection()" style="display: none;">Batal</button>
+          <button type="button" class="btn btn-sm btn-danger" id="btn-bulk-delete" onclick="deleteSelectedSessions()" style="display: none;">
+            Hapus (<span id="btn-count">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <div class="history-list" id="sessions-container">
+        {% for s in sessions %}
+        <div class="history-item" id="session-card-{{ s.id }}" data-search="{{ (s.source_name or s.source_url or '')|lower }}">
+          <div class="item-check-col" onclick="event.stopPropagation()">
+            <input type="checkbox" class="custom-checkbox session-checkbox" value="{{ s.id }}"
+                   data-title="{{ (s.source_name or s.source_url or s.id[:8])|e }}" onchange="onItemCheckChange(this)" />
+          </div>
+
+          <div class="history-main" onclick="toggleItemSelect('{{ s.id }}')" style="cursor: pointer;">
+            <div class="history-title">
+              <span title="{{ s.source_name or s.source_url }}">{{ s.source_name or s.source_url }}</span>
+              <span class="pill pill-{{ s.status }}">{{ s.status }}</span>
+            </div>
+            <div class="history-meta">
+              <span><code class="mono">{{ s.id[:8] }}</code></span>
+              <span class="session-date" data-ts="{{ s.created_at }}">memuat...</span>
+              <span class="history-clips-badge">{{ s.rendered_clips }}/{{ s.total_clips }} klip</span>
+              {% if s.total_clips > 0 %}
+              <div style="width: 90px; height: 5px; background: var(--surface-2); border-radius: 999px; overflow: hidden; align-self: center;">
+                <div style="height: 100%; background: var(--accent); width: {{ (s.rendered_clips / s.total_clips * 100) | round(0) | int }}%;"></div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="history-actions" onclick="event.stopPropagation()">
+            <a href="/jobs/{{ s.id }}" class="btn btn-sm">Buka</a>
+            <button class="btn btn-sm btn-danger" onclick="deleteSession('{{ s.id }}', '{{ (s.source_name or s.source_url or s.id[:8])|e }}')">Hapus</button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div id="no-history-msg" style="text-align: center; padding: 44px 20px; color: var(--text-3); display: {% if sessions %}none{% else %}block{% endif %};">
+        <h3 style="margin: 0 0 6px; color: var(--text); font-weight: 500;">Belum ada riwayat</h3>
+        <p style="margin: 0 0 16px; font-size: 13px;">Mulai dengan menempel link YouTube atau mengunggah file.</p>
+        <a href="/" class="btn btn-sm">Video baru</a>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    document.querySelectorAll('.session-date').forEach(el => {
+      const ts = parseFloat(el.getAttribute('data-ts'));
+      if (ts) {
+        const d = new Date(ts * 1000);
+        el.textContent = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+    });
+
+    function showToast(message, type = 'normal') {
+      const c = document.getElementById('toasts');
+      const t = document.createElement('div');
+      t.className = 'toast ' + (type === 'success' ? 'toast-success' : type === 'danger' ? 'toast-danger' : '');
+      t.textContent = message;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 4000);
+    }
+
+    function getSelectedCheckboxes() { return Array.from(document.querySelectorAll('.session-checkbox:checked')); }
+
+    function updateToolbar() {
+      const selected = getSelectedCheckboxes();
+      const count = selected.length;
+      const allCheckboxes = Array.from(document.querySelectorAll('.session-checkbox'));
+      const masterCheck = document.getElementById('check-all');
+      const badge = document.getElementById('selected-count-badge');
+      const btnDelete = document.getElementById('btn-bulk-delete');
+      const btnClear = document.getElementById('btn-clear-selection');
+      const toolbar = document.getElementById('bulk-toolbar');
+      if (masterCheck) {
+        masterCheck.checked = (allCheckboxes.length > 0 && selected.length === allCheckboxes.length);
+        masterCheck.indeterminate = (selected.length > 0 && selected.length < allCheckboxes.length);
+      }
+      if (count > 0) {
+        toolbar.classList.add('active');
+        badge.style.display = 'inline-flex'; badge.textContent = count + ' sesi dipilih';
+        btnDelete.style.display = 'inline-flex'; btnClear.style.display = 'inline-flex';
+        document.getElementById('btn-count').textContent = count;
+      } else {
+        toolbar.classList.remove('active');
+        badge.style.display = 'none'; btnDelete.style.display = 'none'; btnClear.style.display = 'none';
+      }
+    }
+
+    function onItemCheckChange(cb) {
+      const card = document.getElementById('session-card-' + cb.value);
+      if (card) card.classList.toggle('selected', cb.checked);
+      updateToolbar();
+    }
+
+    function toggleItemSelect(jobId) {
+      const card = document.getElementById('session-card-' + jobId);
+      if (!card) return;
+      const cb = card.querySelector('.session-checkbox');
+      if (cb) { cb.checked = !cb.checked; onItemCheckChange(cb); }
+    }
+
+    function toggleSelectAll(masterCb) {
+      document.querySelectorAll('.session-checkbox').forEach(cb => {
+        const card = document.getElementById('session-card-' + cb.value);
+        if (card && card.style.display !== 'none') {
+          cb.checked = masterCb.checked;
+          card.classList.toggle('selected', masterCb.checked);
+        }
+      });
+      updateToolbar();
+    }
+
+    function clearSelection() {
+      document.querySelectorAll('.session-checkbox').forEach(cb => {
+        cb.checked = false;
+        const card = document.getElementById('session-card-' + cb.value);
+        if (card) card.classList.remove('selected');
+      });
+      const masterCheck = document.getElementById('check-all');
+      if (masterCheck) { masterCheck.checked = false; masterCheck.indeterminate = false; }
+      updateToolbar();
+    }
+
+    function filterSessions() {
+      const q = (document.getElementById('session-search').value || '').toLowerCase().trim();
+      const items = document.querySelectorAll('.history-item');
+      let visibleCount = 0;
+      items.forEach(el => {
+        const text = el.getAttribute('data-search') || '';
+        if (text.includes(q)) { el.style.display = 'flex'; visibleCount++; }
+        else el.style.display = 'none';
+      });
+      const emptyMsg = document.getElementById('no-history-msg');
+      if (items.length > 0 && visibleCount === 0) {
+        emptyMsg.style.display = 'block';
+        emptyMsg.querySelector('h3').textContent = 'Tidak ditemukan';
+        emptyMsg.querySelector('p').textContent = 'Tidak ada sesi yang cocok dengan "' + q + '".';
+      } else if (items.length > 0) emptyMsg.style.display = 'none';
+      updateToolbar();
+    }
+
+    async function deleteSession(jobId, title) {
+      if (!confirm('Hapus sesi "' + title + '" permanen?\n\nFile klip, video sumber, dan transkrip akan dihapus.')) return;
+      const card = document.getElementById('session-card-' + jobId);
+      if (card) { card.style.opacity = '0.5'; card.style.pointerEvents = 'none'; }
+      try {
+        const res = await fetch('/api/jobs/' + jobId + '/delete', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('Sesi dihapus' + (data.freed_mb ? ' (' + data.freed_mb + ' MB)' : ''), 'success');
+          if (card) { card.remove(); refreshStats(); }
+        } else {
+          showToast('Gagal menghapus: ' + (data.error || 'kesalahan'), 'danger');
+          if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; }
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message, 'danger');
+        if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; }
+      }
+    }
+
+    async function deleteSelectedSessions() {
+      const selected = getSelectedCheckboxes();
+      if (selected.length === 0) return;
+      const count = selected.length;
+      const jobIds = selected.map(cb => cb.value);
+      if (!confirm('Hapus ' + count + ' sesi terpilih? Semua klip dan video sumber akan dihapus.')) return;
+      jobIds.forEach(id => {
+        const card = document.getElementById('session-card-' + id);
+        if (card) { card.style.opacity = '0.4'; card.style.pointerEvents = 'none'; }
+      });
+      const btnDelete = document.getElementById('btn-bulk-delete');
+      btnDelete.disabled = true;
+      btnDelete.innerHTML = '<span class="spinner-inline"></span> Menghapus';
+      try {
+        const res = await fetch('/api/jobs/batch-delete', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ job_ids: jobIds })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('Menghapus ' + (data.deleted_jobs || count) + ' sesi' + (data.freed_mb ? ' (' + data.freed_mb + ' MB)' : ''), 'success');
+          jobIds.forEach(id => { const card = document.getElementById('session-card-' + id); if (card) card.remove(); });
+          clearSelection(); refreshStats();
+        } else {
+          showToast('Gagal menghapus: ' + (data.error || 'kesalahan'), 'danger');
+          jobIds.forEach(id => { const card = document.getElementById('session-card-' + id); if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; } });
+        }
+      } catch (err) {
+        showToast('Error: ' + err.message, 'danger');
+        jobIds.forEach(id => { const card = document.getElementById('session-card-' + id); if (card) { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; } });
+      } finally {
+        btnDelete.disabled = false;
+        btnDelete.innerHTML = 'Hapus (<span id="btn-count">0</span>)';
+      }
+    }
+
+    function refreshStats() {
+      const remaining = document.querySelectorAll('.history-item').length;
+      document.getElementById('stat-total-sessions').textContent = remaining;
+      if (remaining === 0) {
+        const toolbar = document.getElementById('bulk-toolbar');
+        const emptyMsg = document.getElementById('no-history-msg');
+        if (toolbar) toolbar.style.display = 'none';
+        if (emptyMsg) emptyMsg.style.display = 'block';
+      }
+      updateToolbar();
+    }
+  </script>
+</body>
+</html>

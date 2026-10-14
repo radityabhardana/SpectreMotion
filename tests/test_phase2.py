@@ -136,7 +136,14 @@ def test_ass_karaoke_contains_words():
                   [Word(0, 1, "halo"), Word(1, 3, "dunia")])
     ass = renderer.build_ass([seg], clip_start=0, clip_end=3, mode="karaoke")
     assert "[Script Info]" in ass and "Dialogue:" in ass
-    assert "halo" in ass and "dunia" in ass
+    assert "HALO" in ass and "DUNIA" in ass
+    # Ensure ASS override tags are proper control blocks, not escaped literal text
+    assert r"\{" not in ass
+    assert r"\}" not in ass
+    assert r"\\c" not in ass
+    assert r"\\fscx" not in ass
+    assert r"{\c" in ass
+    assert r"\fscx114" in ass
 
 
 def test_resolve_font_path_returns_none_when_missing(monkeypatch):

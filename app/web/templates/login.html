@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Masuk — SpectreMotion</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="auth">
+  <div class="auth-box">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M4 4.5l10 7.5-10 7.5V4.5zm8 0l10 7.5-10 7.5V4.5z"/></svg>
+      </div>
+      <h1>SpectreMotion</h1>
+    </div>
+    <p class="muted" style="margin: 0 0 8px; font-size: 13px;">Masuk untuk melanjutkan.</p>
+
+    {% if error %}
+    <p id="red" style="margin: 8px 0;">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="/login" style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="field" style="margin: 0;">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="admin" autofocus autocomplete="username" />
+      </div>
+      <div class="field" style="margin: 0;">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+      <button type="submit" class="btn" style="margin-top: 6px;">Masuk</button>
+    </form>
+  </div>
+</body>
+</html>

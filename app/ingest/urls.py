@@ -59,8 +59,11 @@ def _cookie_file() -> Optional[Path]:
     return None
 
 
-def download_url(url: str, out_dir: Path, *, max_height: int = 1080) -> Path:
+def download_url(url: str, out_dir: Path, *, max_height: int = 1080,
+                 token=None) -> Path:
     """Download a generic URL via yt-dlp into out_dir; return the media file."""
+    if token is not None:
+        token.check()
     try:
         import yt_dlp
     except ImportError as exc:
@@ -85,6 +88,8 @@ def download_url(url: str, out_dir: Path, *, max_height: int = 1080) -> Path:
             ydl.download([url])
     except Exception as exc:  # noqa: BLE001 — yt-dlp raises broad exceptions
         raise IngestError(f"Download gagal: {exc}") from exc
+    if token is not None:
+        token.check()
 
     candidates = [p for p in out_dir.glob("source.*")
                   if p.suffix.lower() in config.SUPPORTED_EXTENSIONS

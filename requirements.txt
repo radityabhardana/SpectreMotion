@@ -23,5 +23,9 @@ yt-dlp>=2024.1
 # ---- Optional: overlay rendering (hook/badge PNG via Pillow) ----
 pillow>=10.0.0
 
+# ---- Face-tracking reframe (horizontal -> vertical follow the speaker) ----
+# Pin <5: OpenCV 5.x removed CascadeClassifier (Haar) which we rely on.
+opencv-python-headless>=4.8,<5
+
 # ---- Tests ----
 pytest>=8.0

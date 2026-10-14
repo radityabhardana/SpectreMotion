@@ -10,5 +10,5 @@ from app.media import transcriber as _impl
 class WhisperTranscriberAdapter:
     """Delegates to app.media.transcriber (faster-whisper backend)."""
 
-    def transcribe(self, video_path: str, work_dir: str):
-        return _impl.transcribe(Path(video_path), Path(work_dir))
+    def transcribe(self, video_path: str, work_dir: str, *, token=None):
+        return _impl.transcribe(Path(video_path), Path(work_dir), token=token)

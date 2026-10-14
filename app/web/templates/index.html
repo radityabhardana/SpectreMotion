@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SpectreMotion</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M4 4.5l10 7.5-10 7.5V4.5zm8 0l10 7.5-10 7.5V4.5z"/></svg>
+      </div>
+      <h1>SpectreMotion</h1>
+    </a>
+    <nav class="nav-links">
+      <a href="/" class="nav-link active">Generator</a>
+      <a href="/history" class="nav-link">Riwayat</a>
+      <a href="/hook-studio" class="nav-link">Hook Studio</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="page-head">
+      <h1 class="page-title">Ubah video panjang jadi klip pendek</h1>
+      <p class="page-desc">Tempel link atau unggah video. Sistem transkripsi, memilih momen, dan memotongnya jadi klip vertikal 9:16 dengan subtitle.</p>
+    </div>
+
+    <section class="card">
+      <form id="job-form" enctype="multipart/form-data">
+        <div class="tabs">
+          <button type="button" class="tab-btn active" id="tab-url" onclick="setTab('url')">Link video</button>
+          <button type="button" class="tab-btn" id="tab-file" onclick="setTab('file')">Unggah file</button>
+        </div>
+
+        <input type="hidden" name="source_type" id="source_type" value="url" />
+
+        <div id="url-pane">
+          <div class="input-bar-group">
+            <input
+              type="url"
+              id="url-input"
+              name="url"
+              class="input-bar-field"
+              placeholder="https://www.youtube.com/watch?v=..."
+              required
+            />
+            <button type="submit" class="btn" id="btn-submit">Proses</button>
+          </div>
+        </div>
+
+        <div id="file-pane" style="display:none">
+          <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+            <div class="dropzone-title" id="dropzone-label">Pilih file atau seret ke sini</div>
+            <div class="dropzone-sub">MP4, MOV, MKV, WEBM (maks 2GB)</div>
+            <input type="file" id="file-input" name="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" onchange="fileSelected(this)" />
+          </div>
+          <div style="text-align: right; margin-top: 14px;">
+            <button type="submit" class="btn" id="btn-submit-file">Proses</button>
+          </div>
+        </div>
+
+        <input type="hidden" name="preset_id" value="default" />
+        <input type="hidden" name="auto_render" value="false" />
+        <input type="hidden" name="campaign_id" value="none" />
+
+        <div id="form-msg" style="margin-top: 12px; font-size: 13px; text-align: center; color: var(--text-2);"></div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    function setTab(type) {
+      document.getElementById('source_type').value = type;
+      const isFile = type === 'file';
+      document.getElementById('file-pane').style.display = isFile ? 'block' : 'none';
+      document.getElementById('url-pane').style.display = isFile ? 'none' : 'block';
+      document.getElementById('tab-file').classList.toggle('active', isFile);
+      document.getElementById('tab-url').classList.toggle('active', !isFile);
+      if (isFile) document.getElementById('url-input').removeAttribute('required');
+      else document.getElementById('url-input').setAttribute('required', 'true');
+    }
+
+    function fileSelected(input) {
+      if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        document.getElementById('dropzone-label').innerHTML = `<b>${file.name}</b> (${sizeMb} MB)`;
+      }
+    }
+
+    const dropzone = document.getElementById('dropzone');
+    if (dropzone) {
+      ['dragenter', 'dragover'].forEach(e => {
+        dropzone.addEventListener(e, (evt) => { evt.preventDefault(); });
+      });
+      ['dragleave', 'drop'].forEach(e => {
+        dropzone.addEventListener(e, (evt) => { evt.preventDefault(); });
+      });
+      dropzone.addEventListener('drop', (evt) => {
+        const files = evt.dataTransfer.files;
+        if (files && files.length > 0) {
+          const fi = document.getElementById('file-input');
+          fi.files = files;
+          fileSelected(fi);
+        }
+      });
+    }
+
+    const form = document.getElementById('job-form');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('form-msg');
+      const btn = document.getElementById('btn-submit');
+      const btnFile = document.getElementById('btn-submit-file');
+      msg.style.color = 'var(--text-2)';
+      msg.textContent = 'Memproses...';
+      if (btn) btn.disabled = true;
+      if (btnFile) btnFile.disabled = true;
+      const fd = new FormData(form);
+      try {
+        const res = await fetch('/api/jobs', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Gagal membuat job');
+        msg.style.color = 'var(--ok)';
+        msg.textContent = 'Job dibuat. Membuka katalog...';
+        setTimeout(() => location.href = '/jobs/' + data.job_id, 400);
+      } catch (err) {
+        msg.style.color = 'var(--danger)';
+        msg.textContent = err.message;
+        if (btn) btn.disabled = false;
+        if (btnFile) btnFile.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

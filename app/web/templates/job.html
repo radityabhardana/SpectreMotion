@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job {{ job.id[:8] }} — SpectreMotion</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24"><path d="M4 4.5l10 7.5-10 7.5V4.5zm8 0l10 7.5-10 7.5V4.5z"/></svg>
+      </div>
+      <h1>SpectreMotion</h1>
+    </a>
+    <nav class="nav-links">
+      <a href="/" class="nav-link">Generator</a>
+      <a href="/history" class="nav-link">Riwayat</a>
+      <a href="/hook-studio" class="nav-link">Hook Studio</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card" id="status-card">
+      <div class="card-header">
+        <div>
+          <h2>
+            <span class="mono">{{ job.id[:8] }}</span>
+            <span id="j-status" class="pill pill-{{ job.status }}">{{ job.status }}</span>
+            <span class="live-dot" id="live-dot" title="sedang berjalan"></span>
+          </h2>
+          <p class="card-desc">{{ job.source_name or job.source_url }}</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button id="btn-cancel" class="btn btn-sm btn-secondary" onclick="cancelJob()" style="display: none;">Batalkan</button>
+          <button id="btn-render-all" class="btn btn-sm" onclick="renderAll()" style="display: none;">Render semua</button>
+          <button id="btn-delete-job" class="btn btn-sm btn-danger" onclick="deleteSession()">Hapus sesi</button>
+        </div>
+      </div>
+
+      <div class="progress-wrap">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+          <span id="j-stage">Tahap: {{ job.stage or 'Menunggu' }}</span>
+          <span id="j-pct" class="muted">{{ (job.progress * 100) | round(0) | int }}%</span>
+        </div>
+        <div class="progress">
+          <div id="j-bar" class="bar" style="width: {{ (job.progress * 100) | round(0) | int }}%;"></div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-2); margin-top: 8px;">
+        <span id="j-msg">{{ job.message or '' }}</span>
+      </div>
+      <p id="j-error" class="error" style="font-size: 13px; margin: 8px 0 0; display: {% if job.error %}block{% else %}none{% endif %};">
+        {{ job.error }}
+      </p>
+    </section>
+
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2>Katalog klip 9:16</h2>
+          <p class="card-desc">Pilih momen, atur gaya subtitle, lalu render.</p>
+        </div>
+      </div>
+
+      <div class="bulk-toolbar" id="clip-bulk-toolbar" style="{% if not clips %}display: none;{% endif %} margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <label class="select-all-label">
+            <input type="checkbox" id="check-all-clips" class="custom-checkbox" onchange="toggleSelectAllClips(this)" />
+            <span>Pilih semua</span>
+          </label>
+          <span class="selected-count-badge" id="selected-clips-badge" style="display: none;">0 klip dipilih</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-clear-clip-selection" onclick="clearClipSelection()" style="display: none;">Batal</button>
+          <button type="button" class="btn btn-sm btn-danger" id="btn-bulk-delete-clips" onclick="deleteSelectedClips()" style="display: none;">
+            Hapus (<span id="clip-btn-count">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <div id="clips-box" class="clips-grid">
+        {% for c in clips %}
+        <div class="clip-card" id="card-{{ c.id }}">
+          <div class="clip-head">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" class="custom-checkbox clip-checkbox" value="{{ c.id }}" onchange="onClipCheckChange(this)" onclick="event.stopPropagation()" />
+              <span class="clip-idx">#{{ c.idx + 1 }}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              {% if c.rendered %}
+              <span class="status-tag status-tag-ready">Siap</span>
+              {% elif c.status == 'rendering' %}
+              <span class="status-tag status-tag-rendering"><span class="spinner-inline"></span> Rendering</span>
+              {% elif c.status == 'failed' %}
+              <span class="status-tag status-tag-failed">Gagal</span>
+              {% else %}
+              <span class="status-tag status-tag-idle">Draft</span>
+              {% endif %}
+              <span class="clip-score">{{ c.viral_score }}/100</span>
+            </div>
+          </div>
+
+          <p class="clip-hook">{{ c.hook }}</p>
+          {% if c.topic %}<p class="clip-topic">{{ c.topic }}</p>{% endif %}
+
+          <div class="clip-meta">
+            <span>{{ "%.0f"|format(c.start_s) }}s – {{ "%.0f"|format(c.end_s) }}s ({{ "%.0f"|format(c.end_s - c.start_s) }} detik)</span>
+          </div>
+
+          {% if c.caption %}<p class="clip-caption">{{ c.caption }}</p>{% endif %}
+          {% if c.reason %}<p class="clip-reason">{{ c.reason }}</p>{% endif %}
+
+          <div class="clip-actions" style="flex-wrap: wrap;">
+            {% if c.rendered %}
+            <button class="btn btn-sm" onclick="openPlayer('{{ c.id }}', '{{ c.hook|e }}', {{ c.idx + 1 }})">Tonton</button>
+            <a class="btn btn-sm btn-secondary" href="/api/clips/{{ c.id }}/download" download>Download</a>
+            <button class="btn btn-sm btn-secondary" onclick="openStyleEditor('{{ c.id }}', '{{ c.hook|e }}', {{ c.idx + 1 }}, {{ c.viral_score }}, {{ (c.end_s - c.start_s)|round|int }})">Ubah gaya</button>
+            {% elif c.status == 'rendering' %}
+            <button class="btn btn-sm btn-secondary" disabled><span class="spinner-inline"></span> Diproses</button>
+            {% else %}
+            <button class="btn btn-sm" onclick="openStyleEditor('{{ c.id }}', '{{ c.hook|e }}', {{ c.idx + 1 }}, {{ c.viral_score }}, {{ (c.end_s - c.start_s)|round|int }})">Atur &amp; render</button>
+            <button class="btn btn-sm btn-secondary" id="btn-render-{{ c.id }}" onclick="renderClipQuick('{{ c.id }}', {{ c.idx + 1 }})">Render cepat</button>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div id="no-clips-msg" style="text-align: center; padding: 32px 20px; color: var(--text-3); display: {% if clips %}none{% else %}block{% endif %};">
+        Sedang mentranskripsi dan mencari momen. Klip akan muncul di sini setelah analisis selesai.
+      </div>
+    </section>
+  </main>
+
+  <!-- Style editor modal -->
+  <div class="modal-overlay" id="editor-modal" onclick="closeEditorModal(event)">
+    <div class="modal-content modal-editor" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="ed-title">Atur gaya klip</h3>
+          <p class="card-desc" id="ed-subtitle" style="margin: 2px 0 0; font-size: 12px;"></p>
+        </div>
+        <button class="btn-close" onclick="closeEditor()">&times;</button>
+      </div>
+
+      <div class="notice">
+        <b>Preview real-time.</b> Ubah font, warna, atau posisi — subtitle di video
+        langsung berubah. Klik <b>Render</b> untuk menaruh subtitle permanen ke file.
+      </div>
+
+      <div class="editor-layout">
+        <div>
+          <div class="phone-frame">
+            <div class="phone-notch"></div>
+            <video id="ed-video" playsinline muted loop style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; z-index:1;"></video>
+            <div class="phone-safezone-guide" title="Area aman" style="z-index:3;"></div>
+            <div class="sub-preview-box pos-bottom" id="live-sub-box" style="z-index:4;">
+              <div class="sub-preview-text" id="live-sub-text" style="color: #ffffff; font-family: 'Arial Bold', sans-serif; font-size: 20px;">
+                CONTOH KATA <span class="hi-word" id="live-hi-word" style="color: #ffe600;">HIGHLIGHT</span> DISINI
+              </div>
+            </div>
+            <div style="position: absolute; bottom: 8px; width: 60px; height: 3px; background: rgba(255,255,255,0.25); border-radius: 999px; z-index:4;"></div>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 10px;">
+            <button type="button" class="btn btn-sm btn-secondary" id="ed-play-btn" onclick="toggleEditorVideo()">Putar video</button>
+            <span style="font-size: 11px; color: var(--text-3);" id="ed-video-status">Memuat video sumber...</span>
+          </div>
+          <div style="text-align: center; margin-top: 6px; font-size: 11px; color: var(--text-3);">
+            Preview real-time (subtitle asli, langsung berubah)
+          </div>
+        </div>
+
+        <div class="editor-controls">
+          <div class="editor-section">
+            <div class="editor-section-title">Preset</div>
+            <div class="preset-grid-mini">
+              <div class="preset-tile active" id="tile-hormozi" onclick="selectPreset('hormozi')">
+                <span class="preset-tile-name">Hormozi</span>
+                <span class="preset-tile-desc">Kuning tebal, 2 kata</span>
+              </div>
+              <div class="preset-tile" id="tile-capcut" onclick="selectPreset('capcut')">
+                <span class="preset-tile-name">CapCut</span>
+                <span class="preset-tile-desc">Hijau, 3 kata</span>
+              </div>
+              <div class="preset-tile" id="tile-neon" onclick="selectPreset('neon_badge')">
+                <span class="preset-tile-name">Neon</span>
+                <span class="preset-tile-desc">Cyan modern</span>
+              </div>
+              <div class="preset-tile" id="tile-cinematic" onclick="selectPreset('cinematic')">
+                <span class="preset-tile-name">Cinematic</span>
+                <span class="preset-tile-desc">Emas, tengah</span>
+              </div>
+              <div class="preset-tile" id="tile-minimal" onclick="selectPreset('minimal')">
+                <span class="preset-tile-name">Minimal</span>
+                <span class="preset-tile-desc">Putih, tanpa outline</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-section-title">Posisi subtitle</div>
+            <div class="seg-group">
+              <button type="button" class="seg-btn active" id="pos-btn-bottom" onclick="setSubtitlePosition('bottom')">Bawah</button>
+              <button type="button" class="seg-btn" id="pos-btn-center" onclick="setSubtitlePosition('center')">Tengah</button>
+              <button type="button" class="seg-btn" id="pos-btn-top" onclick="setSubtitlePosition('top')">Atas</button>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-section-title">Warna sorotan kata</div>
+            <div class="color-swatches">
+              <button type="button" class="color-circle active" style="background: #FFE600;" onclick="setHighlightColor('#FFE600')"></button>
+              <button type="button" class="color-circle" style="background: #00FF88;" onclick="setHighlightColor('#00FF88')"></button>
+              <button type="button" class="color-circle" style="background: #00E5FF;" onclick="setHighlightColor('#00E5FF')"></button>
+              <button type="button" class="color-circle" style="background: #FF3366;" onclick="setHighlightColor('#FF3366')"></button>
+              <button type="button" class="color-circle" style="background: #F5C518;" onclick="setHighlightColor('#F5C518')"></button>
+              <button type="button" class="color-circle" style="background: #FFFFFF;" onclick="setHighlightColor('#FFFFFF')"></button>
+              <input type="color" id="ed-color-custom" class="color-picker-custom" value="#FFE600" onchange="setHighlightColor(this.value)" />
+              <span id="ed-color-hex" style="font-size: 12px; color: var(--text-2); margin-left: 4px;">#FFE600</span>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-section-title">Panjang frasa</div>
+            <div class="seg-group">
+              <button type="button" class="seg-btn" id="split-btn-1" onclick="setWordsPerPhrase(1)">1 kata</button>
+              <button type="button" class="seg-btn active" id="split-btn-2" onclick="setWordsPerPhrase(2)">2–3 kata</button>
+              <button type="button" class="seg-btn" id="split-btn-4" onclick="setWordsPerPhrase(4)">4–5 kata</button>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-section-title">Font</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
+              <div>
+                <label style="font-size: 11px; color: var(--text-3);">Jenis</label>
+                <select id="ed-font-family" style="width: 100%; margin-top: 4px;" onchange="setFontFamily(this.value)">
+                  <option value="Arial Bold">Arial Bold</option>
+                  <option value="Impact">Impact</option>
+                  <option value="Segoe UI Bold">Segoe UI Bold</option>
+                  <option value="Trebuchet MS Bold">Trebuchet MS Bold</option>
+                  <option value="Tahoma Bold">Tahoma Bold</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; color: var(--text-3);">Ukuran</label>
+                <div class="range-wrap" style="margin-top: 6px;">
+                  <input type="range" id="ed-font-size" min="50" max="95" value="76" oninput="setFontSize(this.value)" />
+                  <span class="range-val" id="ed-font-size-val">76px</span>
+                </div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 20px; margin-top: 6px;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                <input type="checkbox" id="ed-all-caps" checked onchange="setAllCaps(this.checked)" />
+                <span>Huruf besar</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                <input type="checkbox" id="ed-karaoke" checked onchange="setKaraoke(this.checked)" />
+                <span>Karaoke</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <div class="editor-section-title">Framing</div>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                <input type="checkbox" id="ed-facetrack" checked />
+                <span>Face tracking</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; cursor: pointer;">
+                <input type="checkbox" id="ed-zoom" checked />
+                <span>Dynamic zoom</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="editor-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeEditor()">Batal</button>
+            <button type="button" class="btn btn-render" id="btn-submit-render" onclick="submitCustomRender()">Render klip ini</button>
+          </div>
+          <p class="card-desc" style="text-align: right; margin: 6px 0 0; font-size: 11px;">
+            Ganti font/preset dulu, lalu klik Render. Tunggu status klip jadi "Siap".
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video player modal -->
+  <div class="modal-overlay" id="player-modal" onclick="closePlayerModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-title">Pratinjau</h3>
+        <button class="btn-close" onclick="closePlayer()">&times;</button>
+      </div>
+      <div class="video-frame-container">
+        <video id="modal-video" controls autoplay playsinline loop>
+          <source id="modal-video-source" src="" type="video/mp4" />
+        </video>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <span id="modal-hook" style="font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+        <a id="modal-download-btn" href="#" class="btn btn-sm" download>Download MP4</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toasts"></div>
+
+  <script>
+    const jobId = "{{ job.id }}";
+    let isFinished = false;
+    const activelyRendering = new Set();
+
+    const editorState = {
+      clipId: null, clipIdx: 1, hook: '', preset: 'hormozi', position: 'bottom',
+      highlightColor: '#FFE600', wordsPerPhrase: 2, fontName: 'Arial Bold',
+      fontSize: 76, allCaps: true, karaoke: true, faceTracking: true, dynamicZoom: true,
+      words: [], wordsLoaded: false,
+    };
+
+    function showToast(message, type = 'normal') {
+      const c = document.getElementById('toasts');
+      const t = document.createElement('div');
+      t.className = 'toast ' + (type === 'success' ? 'toast-success' : type === 'danger' ? 'toast-danger' : '');
+      t.textContent = message;
+      c.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 300); }, 4000);
+    }
+
+    function esc(s) {
+      return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+
+    function openStyleEditor(clipId, hook, idx, score, duration) {
+      editorState.clipId = clipId;
+      editorState.clipIdx = idx;
+      editorState.hook = hook || 'Momen terbaik';
+      editorState.words = [];        // real subtitle words for this clip
+      editorState.wordsLoaded = false;
+      document.getElementById('ed-title').textContent = 'Atur gaya klip #' + idx;
+      document.getElementById('ed-subtitle').textContent = 'Skor ' + (score || 0) + '/100 · ' + (duration || 0) + ' detik';
+      updateLivePreview();
+      loadEditorVideo(clipId);
+      loadClipWords(clipId);
+      document.getElementById('editor-modal').classList.add('open');
+    }
+
+    async function loadClipWords(clipId) {
+      const status = document.getElementById('ed-video-status');
+      try {
+        const res = await fetch('/api/clips/' + clipId + '/transcript');
+        const data = await res.json();
+        editorState.words = data.words || [];
+        editorState.wordsLoaded = true;
+      } catch (err) {
+        editorState.words = [];
+        editorState.wordsLoaded = true;
+      }
+    }
+
+    function loadEditorVideo(clipId) {
+      const v = document.getElementById('ed-video');
+      const status = document.getElementById('ed-video-status');
+      const btn = document.getElementById('ed-play-btn');
+      v.pause();
+      v.removeAttribute('src');
+      v.load();
+      status.textContent = 'Memuat video sumber...';
+      btn.textContent = 'Putar video';
+      v.src = '/api/clips/' + clipId + '/preview';
+      v.load();
+      v.onloadeddata = () => {
+        status.textContent = 'Real-time preview aktif';
+        v.play().catch(() => {});
+      };
+      v.onerror = () => { status.textContent = 'Video sumber tidak tersedia'; };
+      // Re-render subtitle overlay as the video plays.
+      v.ontimeupdate = renderSubtitleOverlay;
+      v.onseeked = renderSubtitleOverlay;
+    }
+
+    // Group words into phrases (mirrors the renderer's words_per_phrase).
+    function groupPhrases() {
+      const n = editorState.wordsPerPhrase || 3;
+      const groups = [];
+      let cur = [];
+      for (const w of editorState.words) {
+        cur.push(w);
+        if (/[.!?:;]$/.test(w.text) || cur.length >= n) { groups.push(cur); cur = []; }
+      }
+      if (cur.length) groups.push(cur);
+      return groups;
+    }
+
+    function renderSubtitleOverlay() {
+      const v = document.getElementById('ed-video');
+      const el = document.getElementById('live-sub-text');
+      const box = document.getElementById('live-sub-box');
+      if (!el || !box) return;
+      box.className = 'sub-preview-box pos-' + editorState.position;
+
+      if (!editorState.wordsLoaded) { el.textContent = ''; return; }
+      if (!editorState.words.length) {
+        el.innerHTML = '<span style="opacity:.6">(tidak ada subtitle terdeteksi di klip ini)</span>';
+        return;
+      }
+
+      const t = v.currentTime || 0;
+      const groups = groupPhrases();
+      let active = groups.find(g => t >= g[0].start && t <= g[g.length - 1].end);
+      if (!active) active = groups.find(g => g[0].start <= t) || groups[0];
+
+      // Active word = the one whose [start,end] contains t.
+      const parts = active.map(w => {
+        const hot = (t >= w.start && t < w.end);
+        const word = editorState.allCaps ? (w.text || '').toUpperCase() : (w.text || '');
+        return hot
+          ? `<span class="hi-word" style="color:${editorState.highlightColor}">${esc(word)}</span>`
+          : `<span>${esc(word)}</span>`;
+      });
+      el.innerHTML = parts.join(' ');
+    }
+
+    function toggleEditorVideo() {
+      const v = document.getElementById('ed-video');
+      const btn = document.getElementById('ed-play-btn');
+      if (v.paused) { v.play(); btn.textContent = 'Jeda'; }
+      else { v.pause(); btn.textContent = 'Putar video'; }
+    }
+
+    function closeEditor() {
+      const v = document.getElementById('ed-video');
+      if (v) { v.pause(); }
+      document.getElementById('editor-modal').classList.remove('open');
+    }
+    function closeEditorModal(e) { if (e.target.id === 'editor-modal') closeEditor(); }
+
+    function updateLivePreview() {
+      const text = document.getElementById('live-sub-text');
+      text.style.fontFamily = `'${editorState.fontName}', sans-serif`;
+      text.style.fontSize = Math.max(14, Math.round(editorState.fontSize * 0.26)) + 'px';
+      document.getElementById('ed-color-hex').textContent = editorState.highlightColor.toUpperCase();
+      document.getElementById('ed-color-custom').value = editorState.highlightColor;
+      renderSubtitleOverlay();
+    }
+
+    function selectPreset(name) {
+      editorState.preset = name;
+      document.querySelectorAll('.preset-tile').forEach(el => el.classList.remove('active'));
+      const tile = document.getElementById('tile-' + name.replace('_badge', ''));
+      if (tile) tile.classList.add('active');
+      if (name === 'hormozi') { Object.assign(editorState, {highlightColor:'#FFE600', wordsPerPhrase:2, position:'bottom', fontName:'Arial Bold', fontSize:78, allCaps:true}); }
+      else if (name === 'capcut') { Object.assign(editorState, {highlightColor:'#00FF88', wordsPerPhrase:3, position:'bottom', fontName:'Arial Bold', fontSize:74, allCaps:true}); }
+      else if (name === 'neon_badge') { Object.assign(editorState, {highlightColor:'#00E5FF', wordsPerPhrase:3, position:'bottom', fontName:'Segoe UI Bold', fontSize:74, allCaps:true}); }
+      else if (name === 'cinematic') { Object.assign(editorState, {highlightColor:'#F5C518', wordsPerPhrase:4, position:'center', fontName:'Trebuchet MS Bold', fontSize:70, allCaps:true}); }
+      else if (name === 'minimal') { Object.assign(editorState, {highlightColor:'#FFFFFF', wordsPerPhrase:4, position:'bottom', fontName:'Arial Bold', fontSize:72, allCaps:false}); }
+      setSubtitlePosition(editorState.position, false);
+      setWordsPerPhrase(editorState.wordsPerPhrase, false);
+      document.getElementById('ed-font-family').value = editorState.fontName;
+      document.getElementById('ed-font-size').value = editorState.fontSize;
+      document.getElementById('ed-font-size-val').textContent = editorState.fontSize + 'px';
+      document.getElementById('ed-all-caps').checked = editorState.allCaps;
+      updateLivePreview();
+    }
+
+    function setSubtitlePosition(pos, update = true) {
+      editorState.position = pos;
+      ['bottom', 'center', 'top'].forEach(p => {
+        const btn = document.getElementById('pos-btn-' + p);
+        if (btn) btn.classList.toggle('active', p === pos);
+      });
+      if (update) updateLivePreview();
+    }
+
+    function setHighlightColor(color) {
+      editorState.highlightColor = color;
+      document.querySelectorAll('.color-circle').forEach(btn => {
+        if (btn.style.backgroundColor && (btn.style.backgroundColor.toLowerCase() === color.toLowerCase() || rgbToHex(btn.style.backgroundColor) === color.toLowerCase())) btn.classList.add('active');
+        else btn.classList.remove('active');
+      });
+      updateLivePreview();
+    }
+
+    function rgbToHex(col) {
+      if (col.charAt(0) === '#') return col.toLowerCase();
+      const rgb = col.match(/\d+/g);
+      if (!rgb || rgb.length < 3) return col;
+      return '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
+    }
+
+    function setWordsPerPhrase(n, update = true) {
+      editorState.wordsPerPhrase = n;
+      [1, 2, 4].forEach(val => {
+        const btn = document.getElementById('split-btn-' + val);
+        if (btn) btn.classList.toggle('active', val === n || (val === 2 && (n === 2 || n === 3)));
+      });
+      if (update) updateLivePreview();
+    }
+    function setFontFamily(fn) { editorState.fontName = fn; updateLivePreview(); }
+    function setFontSize(sz) { editorState.fontSize = parseInt(sz); document.getElementById('ed-font-size-val').textContent = sz + 'px'; updateLivePreview(); }
+    function setAllCaps(b) { editorState.allCaps = b; updateLivePreview(); }
+    function setKaraoke(b) { editorState.karaoke = b; }
+
+    async function submitCustomRender() {
+      const clipId = editorState.clipId;
+      const payload = {
+        force: true,
+        style_overrides: {
+          preset_id: editorState.preset,
+          position: editorState.position,
+          subtitle: {
+            font_name: editorState.fontName, font_size: editorState.fontSize,
+            highlight_color: editorState.highlightColor, words_per_phrase: editorState.wordsPerPhrase,
+            text_transform: editorState.allCaps ? 'upper' : 'none',
+            mode: editorState.karaoke ? 'karaoke' : 'line',
+          },
+          video: {
+            face_tracking: document.getElementById('ed-facetrack').checked,
+            dynamic_zoom: document.getElementById('ed-zoom').checked,
+          }
+        }
+      };
+      activelyRendering.add(clipId);
+      closeEditor();
+      showToast('Klip #' + editorState.clipIdx + ' sedang dirender.', 'normal');
+      try {
+        const res = await fetch('/api/clips/' + clipId + '/render', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.ok) { isFinished = false; ensurePolling(); refresh(); }
+        else { activelyRendering.delete(clipId); showToast('Gagal render: ' + (data.error || 'kesalahan'), 'danger'); refresh(); }
+      } catch (err) { activelyRendering.delete(clipId); showToast('Gagal render: ' + err.message, 'danger'); refresh(); }
+    }
+
+    async function renderClipQuick(clipId, idx) {
+      activelyRendering.add(clipId);
+      const btn = document.getElementById('btn-render-' + clipId);
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-inline"></span> Memulai'; }
+      showToast('Klip #' + idx + ' sedang dirender.', 'normal');
+      try {
+        const res = await fetch('/api/clips/' + clipId + '/render', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) { isFinished = false; ensurePolling(); refresh(); }
+        else { activelyRendering.delete(clipId); showToast('Gagal: ' + (data.error || 'kesalahan'), 'danger'); refresh(); }
+      } catch (err) { activelyRendering.delete(clipId); showToast('Gagal render: ' + err.message, 'danger'); refresh(); }
+    }
+
+    function openPlayer(clipId, hook, idx) {
+      const modal = document.getElementById('player-modal');
+      const video = document.getElementById('modal-video');
+      document.getElementById('modal-title').textContent = 'Klip #' + idx;
+      document.getElementById('modal-hook').textContent = hook ? '"' + hook + '"' : '';
+      document.getElementById('modal-download-btn').href = '/api/clips/' + clipId + '/download';
+      document.getElementById('modal-video-source').src = '/api/clips/' + clipId + '/stream';
+      video.load();
+      video.play().catch(() => {});
+      modal.classList.add('open');
+    }
+    function closePlayer() {
+      const video = document.getElementById('modal-video');
+      video.pause(); video.currentTime = 0;
+      document.getElementById('player-modal').classList.remove('open');
+    }
+    function closePlayerModal(e) { if (e.target.id === 'player-modal') closePlayer(); }
+
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closePlayer(); closeEditor(); } });
+
+    async function cancelJob() {
+      if (!confirm('Batalkan pemrosesan video ini?')) return;
+      try { await fetch('/api/jobs/' + jobId + '/cancel', { method: 'POST' }); refresh(); }
+      catch (err) { showToast('Gagal membatalkan: ' + err.message, 'danger'); }
+    }
+
+    async function deleteSession() {
+      const confirmed = confirm(
+        'Hapus sesi ini permanen?\n\n' +
+        'Akan menghapus:\n' +
+        '• Semua file MP4 klip yang sudah dirender\n' +
+        '• Video sumber\n' +
+        '• Transkrip dan katalog momen di database'
+      );
+      if (!confirmed) return;
+      try {
+        const res = await fetch('/api/jobs/' + jobId + '/delete', { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) { alert('Sesi dihapus (' + (data.freed_mb || 0) + ' MB dibebaskan).'); window.location.href = '/history'; }
+        else showToast('Gagal menghapus: ' + (data.error || 'kesalahan'), 'danger');
+      } catch (err) { showToast('Error: ' + err.message, 'danger'); }
+    }
+
+    async function renderAll() {
+      if (!confirm('Render semua klip yang belum jadi?')) return;
+      showToast('Mengantre semua klip untuk dirender.', 'normal');
+      try { await fetch('/api/jobs/' + jobId + '/render-all', { method: 'POST' }); isFinished = false; ensurePolling(); refresh(); }
+      catch (err) { showToast('Gagal: ' + err.message, 'danger'); }
+    }
+
+    function cardHtml(c) {
+      // Trust the server's `rendered` flag — it now reflects the FILE on disk.
+      const isRendered = (c.rendered === true);
+      const isRendering = (c.status === 'rendering' || activelyRendering.has(c.id));
+      const isFailed = (c.status === 'failed');
+      let statusTag = '', actions = '';
+
+      if (isRendered) {
+        statusTag = '<span class="status-tag status-tag-ready">Siap</span>';
+        actions = `<button class="btn btn-sm" onclick="openPlayer('${c.id}', '${esc(c.hook)}', ${c.idx + 1})">Tonton</button>
+                   <a class="btn btn-sm btn-secondary" href="/api/clips/${c.id}/download" download>Download</a>
+                   <button class="btn btn-sm btn-secondary" onclick="openStyleEditor('${c.id}', '${esc(c.hook)}', ${c.idx + 1}, ${Math.round(c.score || c.viral_score || 0)}, ${Math.round(c.end - c.start)})">Ubah gaya</button>`;
+      } else if (isRendering) {
+        statusTag = '<span class="status-tag status-tag-rendering"><span class="spinner-inline"></span> Rendering</span>';
+        actions = `<button class="btn btn-sm btn-secondary" disabled><span class="spinner-inline"></span> Diproses</button>`;
+      } else if (isFailed) {
+        statusTag = '<span class="status-tag status-tag-failed">Gagal</span>';
+        actions = `<button class="btn btn-sm btn-secondary" onclick="openStyleEditor('${c.id}', '${esc(c.hook)}', ${c.idx + 1}, ${Math.round(c.score || c.viral_score || 0)}, ${Math.round(c.end - c.start)})">Coba lagi</button>`;
+      } else {
+        statusTag = '<span class="status-tag status-tag-idle">Belum dirender</span>';
+        actions = `<button class="btn btn-sm" onclick="openStyleEditor('${c.id}', '${esc(c.hook)}', ${c.idx + 1}, ${Math.round(c.score || c.viral_score || 0)}, ${Math.round(c.end - c.start)})">Atur &amp; render</button>
+                   <button class="btn btn-sm btn-secondary" id="btn-render-${c.id}" onclick="renderClipQuick('${c.id}', ${c.idx + 1})">Render cepat</button>`;
+      }
+
+      return `
+        <div class="clip-card" id="card-${c.id}">
+          <div class="clip-head">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" class="custom-checkbox clip-checkbox" value="${c.id}" onchange="onClipCheckChange(this)" onclick="event.stopPropagation()" />
+              <span class="clip-idx">#${c.idx + 1}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              ${statusTag}
+              <span class="clip-score">${c.score || c.viral_score}/100</span>
+            </div>
+          </div>
+          <p class="clip-hook">${esc(c.hook)}</p>
+          ${c.topic ? `<p class="clip-topic">${esc(c.topic)}</p>` : ''}
+          <div class="clip-meta">
+            <span>${Math.round(c.start)}s – ${Math.round(c.end)}s (${Math.round(c.end - c.start)} detik)</span>
+          </div>
+          ${c.caption ? `<p class="clip-caption">${esc(c.caption)}</p>` : ''}
+          ${c.reason ? `<p class="clip-reason">${esc(c.reason)}</p>` : ''}
+          <div class="clip-actions" style="flex-wrap: wrap;">${actions}</div>
+        </div>
+      `;
+    }
+
+    function getCheckedClipIds() {
+      return Array.from(document.querySelectorAll('.clip-checkbox:checked')).map(cb => cb.value);
+    }
+
+    function updateClipToolbar() {
+      const selected = getCheckedClipIds();
+      const count = selected.length;
+      const allCheckboxes = Array.from(document.querySelectorAll('.clip-checkbox'));
+      const masterCheck = document.getElementById('check-all-clips');
+      const badge = document.getElementById('selected-clips-badge');
+      const btnDelete = document.getElementById('btn-bulk-delete-clips');
+      const btnClear = document.getElementById('btn-clear-clip-selection');
+      const toolbar = document.getElementById('clip-bulk-toolbar');
+      if (masterCheck) {
+        masterCheck.checked = (allCheckboxes.length > 0 && selected.length === allCheckboxes.length);
+        masterCheck.indeterminate = (selected.length > 0 && selected.length < allCheckboxes.length);
+      }
+      if (count > 0) {
+        if (toolbar) toolbar.classList.add('active');
+        if (badge) { badge.style.display = 'inline-flex'; badge.textContent = count + ' klip dipilih'; }
+        if (btnDelete) btnDelete.style.display = 'inline-flex';
+        if (btnClear) btnClear.style.display = 'inline-flex';
+        document.getElementById('clip-btn-count').textContent = count;
+      } else {
+        if (toolbar) toolbar.classList.remove('active');
+        if (badge) badge.style.display = 'none';
+        if (btnDelete) btnDelete.style.display = 'none';
+        if (btnClear) btnClear.style.display = 'none';
+      }
+    }
+
+    function onClipCheckChange(cb) {
+      const card = document.getElementById('card-' + cb.value);
+      if (card) card.classList.toggle('selected', cb.checked);
+      updateClipToolbar();
+    }
+
+    function toggleSelectAllClips(masterCb) {
+      document.querySelectorAll('.clip-checkbox').forEach(cb => {
+        cb.checked = masterCb.checked;
+        const card = document.getElementById('card-' + cb.value);
+        if (card) card.classList.toggle('selected', masterCb.checked);
+      });
+      updateClipToolbar();
+    }
+
+    function clearClipSelection() {
+      document.querySelectorAll('.clip-checkbox').forEach(cb => {
+        cb.checked = false;
+        const card = document.getElementById('card-' + cb.value);
+        if (card) card.classList.remove('selected');
+      });
+      const masterCheck = document.getElementById('check-all-clips');
+      if (masterCheck) { masterCheck.checked = false; masterCheck.indeterminate = false; }
+      updateClipToolbar();
+    }
+
+    async function deleteSelectedClips() {
+      const clipIds = getCheckedClipIds();
+      if (clipIds.length === 0) return;
+      if (!confirm('Hapus ' + clipIds.length + ' klip terpilih? File dan data akan dihapus permanen.')) return;
+      try {
+        const res = await fetch('/api/clips/batch-delete', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clip_ids: clipIds })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast('Menghapus ' + (data.deleted_clips || clipIds.length) + ' klip.', 'success');
+          clipIds.forEach(cid => { const card = document.getElementById('card-' + cid); if (card) card.remove(); });
+          clearClipSelection();
+        } else showToast('Gagal menghapus: ' + (data.error || 'kesalahan'), 'danger');
+      } catch (err) { showToast('Error: ' + err.message, 'danger'); }
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch('/api/jobs/' + jobId);
+        if (!res.ok) return;
+        const j = await res.json();
+        const statusEl = document.getElementById('j-status');
+        statusEl.textContent = j.status;
+        statusEl.className = 'pill pill-' + j.status;
+        document.getElementById('j-stage').textContent = 'Tahap: ' + (j.stage || 'Menunggu');
+        const pct = Math.round((j.progress || 0) * 100);
+        document.getElementById('j-pct').textContent = pct + '%';
+        document.getElementById('j-bar').style.width = pct + '%';
+        document.getElementById('j-msg').textContent = j.message || '';
+        const errEl = document.getElementById('j-error');
+        if (j.error) { errEl.style.display = 'block'; errEl.textContent = j.error; } else errEl.style.display = 'none';
+
+        const isParentRunning = (j.status === 'running' || j.status === 'queued');
+        document.getElementById('btn-cancel').style.display = isParentRunning ? 'inline-block' : 'none';
+
+        let hasActiveClips = false;
+        if (j.clips && j.clips.length > 0) {
+          document.getElementById('no-clips-msg').style.display = 'none';
+          j.clips.forEach(c => {
+            if (c.rendered && activelyRendering.has(c.id)) {
+              activelyRendering.delete(c.id);
+              showToast('Klip #' + (c.idx + 1) + ' selesai.', 'success');
+            } else if (c.status === 'rendering' || activelyRendering.has(c.id)) hasActiveClips = true;
+          });
+          document.getElementById('clips-box').innerHTML = j.clips.map(cardHtml).join('');
+          document.getElementById('btn-render-all').style.display = 'inline-block';
+        }
+
+        const isRunning = isParentRunning || hasActiveClips || activelyRendering.size > 0;
+        document.getElementById('live-dot').style.display = isRunning ? 'inline-block' : 'none';
+        if (!isRunning && (j.status === 'done' || j.status === 'failed' || j.status === 'canceled')) isFinished = true;
+      } catch (err) { console.error('Refresh error:', err); }
+    }
+
+    let pollTimer = null;
+    function ensurePolling() {
+      if (!pollTimer) {
+        pollTimer = setInterval(() => {
+          refresh();
+          if (isFinished && activelyRendering.size === 0) { clearInterval(pollTimer); pollTimer = null; }
+        }, 3000);
+      }
+    }
+
+    let evtSource = null;
+    function startSSE() {
+      try {
+        evtSource = new EventSource('/events/' + jobId);
+        evtSource.onmessage = () => refresh();
+        evtSource.onerror = () => {
+          if (evtSource) { evtSource.close(); evtSource = null; }
+          if (!isFinished) setTimeout(startSSE, 4000);
+        };
+      } catch (e) { console.warn('SSE tidak didukung, pakai polling'); }
+    }
+
+    ensurePolling();
+    startSSE();
+    refresh();
+  </script>
+</body>
+</html>

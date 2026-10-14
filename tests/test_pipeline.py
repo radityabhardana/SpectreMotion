@@ -46,16 +46,17 @@ def test_ass_generation_karaoke():
     ass = renderer.build_ass([seg], clip_start=0.0, clip_end=3.0, mode="karaoke")
     assert "[Script Info]" in ass
     assert "Dialogue:" in ass
-    assert "halo" in ass and "dunia" in ass
+    # Default text_transform=upper (2short-style), so words appear uppercased.
+    assert "HALO" in ass and "DUNIA" in ass
 
 
 def test_ass_generation_line():
     seg = Segment(start=0.0, end=2.0, text="kalimat sederhana", words=[])
     ass = renderer.build_ass([seg], clip_start=0.0, clip_end=2.0, mode="line")
-    assert "kalimat sederhana" in ass
+    assert "KALIMAT SEDERHANA" in ass
 
 
 def test_ass_outside_window_excluded():
     seg = Segment(start=100.0, end=110.0, text="jauh di luar", words=[])
     ass = renderer.build_ass([seg], clip_start=0.0, clip_end=5.0, mode="line")
-    assert "jauh di luar" not in ass
+    assert "jauh di luar" not in ass.lower()

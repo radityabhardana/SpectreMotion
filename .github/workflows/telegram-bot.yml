@@ -7,12 +7,16 @@ name: Telegram Bot
 #
 # NOTE: this is NOT a 24/7 server. Expect up to ~5 min latency between runs.
 # For always-on behaviour, run `python -m app.bot` on a small VPS instead.
+#
+# DISABLED FOR SCHEDULE: the cron trigger below is commented out so this
+# workflow does NOT run automatically (no GitHub email spam). To re-enable
+# scheduled runs later, uncomment the `schedule:` block.
 
 on:
-  schedule:
-    # Every 5 minutes. Actions cron can be delayed under load.
-    - cron: "*/5 * * * *"
-  workflow_dispatch:
+  # schedule:
+  #   # Every 5 minutes. Actions cron can be delayed under load.
+  #   - cron: "*/5 * * * *"
+  workflow_dispatch:   # manual trigger only
 
 # Needed so the job can commit state back to the repo.
 permissions:

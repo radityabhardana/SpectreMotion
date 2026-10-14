@@ -23,7 +23,10 @@ def _cookie_path() -> Optional[Path]:
     return p if p.is_file() and p.stat().st_size > 50 else None
 
 
-def download_youtube(url: str, out_dir: Path, *, max_height: int = 1080) -> Path:
+def download_youtube(url: str, out_dir: Path, *, max_height: int = 1080,
+                     token=None) -> Path:
+    if token is not None:
+        token.check()
     try:
         import yt_dlp
     except ImportError as exc:
@@ -71,6 +74,8 @@ def download_youtube(url: str, out_dir: Path, *, max_height: int = 1080) -> Path
                   or p.suffix.lower() == ".mp4"]
     if not candidates:
         raise IngestError("Download YouTube selesai tapi file tidak ditemukan")
+    if token is not None:
+        token.check()
     return candidates[0]
 
 

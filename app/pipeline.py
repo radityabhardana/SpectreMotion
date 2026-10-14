@@ -38,8 +38,9 @@ def render_clip_job(job: "storage.Job") -> None:
     """
     events = registry.get_events()
     settings = job.settings or {}
-    clip_id = settings.get("clip_id") or ""
-    parent_job_id = settings.get("job_id") or ""
+    payload = settings.get("payload") or {}
+    clip_id = settings.get("clip_id") or payload.get("clip_id") or ""
+    parent_job_id = settings.get("job_id") or payload.get("job_id") or ""
 
     def emit(stage: str, pct: float, msg: str = "") -> None:
         storage.update_job(job.id, stage=stage, progress=pct, message=msg)
@@ -55,9 +56,24 @@ def render_clip_job(job: "storage.Job") -> None:
         if clip is None or parent is None:
             raise PipelineError("Klip atau job induk tidak ditemukan")
 
-        source = Path(parent.source_path)
-        if not source.is_file():
-            raise PipelineError(f"File sumber tidak ditemukan: {source}")
+        # Ensure source video is available; recover/download if needed
+        source = Path(parent.source_path) if parent.source_path else None
+        if not source or not source.is_file():
+            if parent.source_url:
+                emit("download", 0.08, "Mengunduh sumber video untuk rendering klip...")
+                temp_work = config.WORK_DIR / f"recover_{job.id}"
+                temp_work.mkdir(parents=True, exist_ok=True)
+                try:
+                    temp_source = _download_source(parent.source_url, temp_work)
+                    perm_dest = config.UPLOAD_DIR / f"{parent.id}_source{temp_source.suffix or '.mp4'}"
+                    perm_dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(temp_source, perm_dest)
+                    source = perm_dest
+                    storage.update_job(parent.id, source_path=str(perm_dest))
+                finally:
+                    shutil.rmtree(temp_work, ignore_errors=True)
+            else:
+                raise PipelineError(f"File sumber video tidak ditemukan: {parent.source_path or '(kosong)'}")
 
         emit("transcribe", 0.2, "Menyiapkan transkrip...")
         transcriber = registry.get_transcriber()
@@ -67,7 +83,37 @@ def render_clip_job(job: "storage.Job") -> None:
         try:
             transcript = transcriber.transcribe(str(source), str(work_dir))
             info = renderer.probe_video(source)
-            template = _load_template(parent.template_path)
+            template = _load_template(parent.template_path) or {}
+
+            # Apply 2short.ai custom style overrides if provided in job settings or payload
+            style_overrides = (settings.get("style_overrides") or
+                               payload.get("style_overrides") or {})
+            if style_overrides:
+                preset_id = style_overrides.get("preset_id")
+                if preset_id:
+                    from app import presets as presets_mod
+                    preset_data = presets_mod.get_preset(preset_id)
+                    if preset_data:
+                        template = presets_mod.deep_merge(template, preset_data)
+
+                # Apply subtitle overrides (font, size, colors, splitting, position)
+                sub_overrides = style_overrides.get("subtitle") or {}
+                if sub_overrides:
+                    template["subtitle"] = {**(template.get("subtitle") or {}), **sub_overrides}
+
+                # Map helper position to margin_v if present
+                pos = style_overrides.get("position")
+                if pos == "bottom":
+                    template.setdefault("subtitle", {})["margin_v"] = 420
+                elif pos == "center":
+                    template.setdefault("subtitle", {})["margin_v"] = 850
+                elif pos == "top":
+                    template.setdefault("subtitle", {})["margin_v"] = 1400
+
+                # Apply video overrides (face tracking, dynamic zoom)
+                vid_overrides = style_overrides.get("video") or {}
+                if vid_overrides:
+                    template["video"] = {**(template.get("video") or {}), **vid_overrides}
 
             emit("render", 0.6, "Render klip...")
             out_path = config.OUTPUT_DIR / f"{parent.id}_clip{clip.idx + 1}.mp4"
@@ -91,6 +137,8 @@ def render_clip_job(job: "storage.Job") -> None:
                                            "download_url": f"/api/clips/{clip.id}/download"})
     except Exception as exc:  # noqa: BLE001
         log.exception("[render %s] FAILED: %s", job.id[:8], exc)
+        if clip_id:
+            storage.update_clip(clip_id, status="failed")
         storage.update_job(job.id, status=storage.JOB_FAILED, stage="failed",
                            error=str(exc))
         if parent_job_id:
@@ -138,7 +186,12 @@ def process_job(job: storage.Job, progress: Optional[ProgressFn] = None) -> None
 
         if job.source_type == "url":
             emit("download", 0.05, "Mengunduh sumber...")
-            source = _download_source(job.source_url, work_dir)
+            downloaded = _download_source(job.source_url, work_dir)
+            perm_dest = config.UPLOAD_DIR / f"{job.id}_source{downloaded.suffix or '.mp4'}"
+            perm_dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(downloaded, perm_dest)
+            source = perm_dest
+            storage.update_job(job.id, source_path=str(perm_dest))
 
         if not source.is_file():
             raise PipelineError(f"File sumber tidak ditemukan: {source}")
@@ -176,8 +229,18 @@ def process_job(job: storage.Job, progress: Optional[ProgressFn] = None) -> None
                 verdict_msg=campaign_mod.summarize(verdicts),
             ))
         storage.replace_clips(job.id, clips)
-        events.publish(channel, {"type": "catalog.ready", "job_id": job.id,
-                                 "count": len(clips)})
+        # Check if auto_render is requested (default False for 2short.ai style fast analysis)
+        auto_render = bool((job.settings or {}).get("auto_render", True))
+        if not auto_render:
+            emit("done", 1.0, f"{len(clips)} momen viral siap diedit & dirender!")
+            storage.update_job(job.id, status=storage.JOB_DONE, stage="done",
+                               progress=1.0, message=f"{len(clips)} momen viral siap diedit & dirender!")
+            events.publish(channel, {"type": "job.succeeded", "job_id": job.id})
+            from app import audit
+            audit.record("job.completed", subject=job.id,
+                         detail={"clips": len(clips), "rendered": 0,
+                                 "campaign_id": job.campaign_id}, actor="worker")
+            return
 
         # Render the top N clips.
         template = _load_template(job.template_path)
@@ -195,7 +258,8 @@ def process_job(job: storage.Job, progress: Optional[ProgressFn] = None) -> None
                 hook_text=clip.hook, info=info, template=template,
                 subtitle_mode=(template or {}).get("subtitle", {}).get("mode", "karaoke"),
             )
-            storage.update_clip(clip.id, output_path=str(out_path), rendered=True)
+            storage.update_clip(clip.id, output_path=str(out_path), rendered=True,
+                                status="rendered")
 
         emit("done", 1.0, f"{len(to_render)} klip selesai")
         storage.update_job(job.id, status=storage.JOB_DONE, stage="done",

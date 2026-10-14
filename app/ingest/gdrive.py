@@ -27,16 +27,22 @@ class GDriveQuotaError(IngestError):
     pass
 
 
-def download_gdrive(url: str, out_dir: Path, *, max_height: int = 1080) -> Path:
+def download_gdrive(url: str, out_dir: Path, *, max_height: int = 1080,
+                    token=None) -> Path:
+    if token is not None:
+        token.check()
     file_id = extract_gdrive_id(url)
     if not file_id:
         raise IngestError("Link Google Drive tidak valid")
     out_dir.mkdir(parents=True, exist_ok=True)
     try:
-        return _via_ytdlp(url, out_dir, max_height)
+        result = _via_ytdlp(url, out_dir, max_height)
     except IngestError as exc:
         log.warning("yt-dlp GDrive gagal (%s); coba direct-stream", exc)
-        return _via_direct(file_id, out_dir)
+        result = _via_direct(file_id, out_dir)
+    if token is not None:
+        token.check()
+    return result
 
 
 def _via_ytdlp(url: str, out_dir: Path, max_height: int) -> Path:

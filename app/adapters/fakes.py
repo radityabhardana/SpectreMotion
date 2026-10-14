@@ -33,7 +33,9 @@ _FIXTURE_SEGMENTS = [
 class FakeTranscriber:
     """TranscriberPort that ignores input and returns a fixed transcript."""
 
-    def transcribe(self, video_path: str, work_dir: str) -> Transcript:
+    def transcribe(self, video_path: str, work_dir: str, *, token=None) -> Transcript:
+        if token is not None:
+            token.check()
         return Transcript(language="id", duration=14.0, segments=list(_FIXTURE_SEGMENTS))
 
 
