@@ -110,6 +110,10 @@ def render_clip_job(job: "storage.Job") -> None:
                 elif pos == "top":
                     template.setdefault("subtitle", {})["margin_v"] = 1400
 
+                # Explicit margin_v for custom manual positioning
+                if sub_overrides.get("margin_v") is not None:
+                    template.setdefault("subtitle", {})["margin_v"] = int(sub_overrides["margin_v"])
+
                 # Apply video overrides (face tracking, dynamic zoom)
                 vid_overrides = style_overrides.get("video") or {}
                 if vid_overrides:

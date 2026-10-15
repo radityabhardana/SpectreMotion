@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Job {{ job.id[:8] }} — SpectreMotion</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,700;0,800;0,900;1,800&family=Oswald:wght@600;700&family=Poppins:ital,wght@0,600;0,700;0,800;0,900;1,800&display=swap" rel="stylesheet" />
 </head>
 <body>
   <header class="topbar">
@@ -155,18 +158,38 @@
         <div class="editor-preview">
           <div class="phone-frame">
             <div class="phone-notch"></div>
+            <button type="button" class="phone-caption-btn" id="phone-copy-caption-btn" onclick="copyEditorCaption(this)" title="Salin caption klip">📋 Salin Caption</button>
             <video id="ed-video" playsinline loop style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; z-index:1;"></video>
             <div class="phone-safezone-guide" title="Area aman" style="z-index:3;"></div>
-            <div class="sub-preview-box pos-bottom" id="live-sub-box" style="z-index:4;">
-              <div class="sub-preview-text" id="live-sub-text" style="color: #ffffff; font-family: 'Arial Bold', sans-serif; font-size: 20px;"></div>
+            <div class="sub-snap-guide-h" id="sub-snap-guide-h"></div>
+            <div class="sub-preview-box" id="live-sub-box" style="z-index:4; top: 82%; transform: translateY(-50%);">
+              <div class="sub-selection-frame" id="live-sub-frame" title="Klik untuk memilih, geser untuk memindahkan posisi">
+                <div class="sub-preview-text" id="live-sub-text" style="color: #ffffff;"></div>
+                <div class="sub-handle handle-tl"></div>
+                <div class="sub-handle handle-tr"></div>
+                <div class="sub-handle handle-bl"></div>
+                <div class="sub-handle handle-br"></div>
+                <div class="sub-drag-badge" id="sub-drag-badge">↕ Geser</div>
+              </div>
             </div>
             <div style="position: absolute; bottom: 8px; width: 60px; height: 3px; background: rgba(255,255,255,0.25); border-radius: 999px; z-index:4;"></div>
           </div>
           <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
             <button type="button" class="btn btn-sm btn-secondary" id="ed-play-btn" onclick="toggleEditorVideo()">Putar video</button>
-            <button type="button" class="btn btn-sm btn-secondary" id="ed-sound-btn" onclick="toggleEditorSound()" title="Suara">🔇</button>
+            <button type="button" class="btn btn-sm btn-secondary" id="ed-sound-btn" onclick="toggleEditorSound()" title="Suara">🔊</button>
             <button type="button" class="btn btn-sm btn-secondary active-toggle" id="ed-facetrack-btn" onclick="toggleFaceTracking()" title="Face Motion Tracking (Otomatis ikuti wajah pembicara)">👤 Face Track: ON</button>
             <span style="font-size: 11px; color: var(--text-3);" id="ed-video-status">Memuat video...</span>
+          </div>
+
+          <!-- Caption Siap Salin -->
+          <div class="ed-caption-card" id="ed-caption-card">
+            <div class="ed-caption-header">
+              <span class="ed-caption-title">📝 Caption Siap Salin</span>
+              <button type="button" class="btn-copy-caption" id="ed-copy-caption-btn" onclick="copyEditorCaption(this)">
+                📋 Salin
+              </button>
+            </div>
+            <div class="ed-caption-content" id="ed-caption-text"></div>
           </div>
         </div>
 
@@ -275,11 +298,13 @@
                     <label style="font-size: 11px; color: var(--text-3); font-weight: 500;">Font name</label>
                     <select id="ed-font-family" style="width: 100%; margin-top: 4px; padding: 6px; font-size: 12px;" onchange="setFontFamily(this.value)">
                       <option value="Poppins">Poppins</option>
-                      <option value="Arial Bold">Arial Bold</option>
                       <option value="Impact">Impact</option>
-                      <option value="Segoe UI Bold">Segoe UI Bold</option>
-                      <option value="Trebuchet MS Bold">Trebuchet MS Bold</option>
-                      <option value="Tahoma Bold">Tahoma Bold</option>
+                      <option value="Montserrat">Montserrat</option>
+                      <option value="Oswald">Oswald</option>
+                      <option value="Arial Bold">Arial</option>
+                      <option value="Segoe UI Bold">Segoe UI</option>
+                      <option value="Trebuchet MS Bold">Trebuchet MS</option>
+                      <option value="Tahoma Bold">Tahoma</option>
                     </select>
                   </div>
                   <div>
@@ -396,6 +421,15 @@
         <span id="modal-hook" style="font-size: 13px; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
         <a id="modal-download-btn" href="#" class="btn btn-sm" download>Download MP4</a>
       </div>
+      <div class="ed-caption-card" id="player-caption-card" style="margin-top: 10px;">
+        <div class="ed-caption-header">
+          <span class="ed-caption-title">📝 Caption Siap Salin</span>
+          <button type="button" class="btn-copy-caption" id="player-copy-caption-btn" onclick="copyPlayerCaption(this)">
+            📋 Salin
+          </button>
+        </div>
+        <div class="ed-caption-content" id="player-caption-text"></div>
+      </div>
     </div>
   </div>
 
@@ -405,9 +439,24 @@
     const jobId = "{{ job.id }}";
     let isFinished = false;
     const activelyRendering = new Set();
+    const clipsData = {
+      {% for c in clips %}
+      "{{ c.id }}": {
+        id: "{{ c.id }}",
+        idx: {{ c.idx }},
+        hook: {{ c.hook|tojson }},
+        topic: {{ (c.topic or '')|tojson }},
+        caption: {{ (c.caption or '')|tojson }},
+        score: {{ c.viral_score }},
+        start: {{ c.start_s }},
+        end: {{ c.end_s }}
+      },
+      {% endfor %}
+    };
+    let currentPlayerCaption = '';
 
     const editorState = {
-      clipId: null, clipIdx: 1, hook: '',
+      clipId: null, clipIdx: 1, hook: '', caption: '',
       subtitlesEnabled: true,
       preset: 'they_are_spoken',
       transition: 'word_bounce',
@@ -415,6 +464,8 @@
       highlightColor: '#0169EE',
       splitting: '20letters',
       position: 'bottom',
+      customPosY: 82,
+      marginV: 420,
       fontName: 'Poppins',
       fontWeight: '700',
       fontSize: 75,
@@ -474,14 +525,24 @@
       editorState.words = [];
       editorState.wordsLoaded = false;
       editorState.faceTracking = true;
+      editorState.position = 'bottom';
+      editorState.customPosY = 82;
+      editorState.marginV = 420;
       const ftBtn = document.getElementById('ed-facetrack-btn');
       const ftChk = document.getElementById('ed-facetrack');
       if (ftBtn) { ftBtn.textContent = '👤 Face Track: ON'; ftBtn.classList.add('active-toggle'); }
       if (ftChk) { ftChk.checked = true; }
       document.getElementById('ed-title').textContent = 'Atur gaya klip #' + idx;
       document.getElementById('ed-subtitle').textContent = 'Skor ' + (score || 0) + '/100 · ' + (duration || 0) + ' detik';
+      const clip = clipsData[clipId] || {};
+      const clipCaption = (clip.caption && clip.caption.trim()) || hook || '';
+      editorState.caption = clipCaption;
+      const edCapEl = document.getElementById('ed-caption-text');
+      if (edCapEl) edCapEl.textContent = clipCaption || '(Belum ada caption untuk klip ini)';
+      applySubtitlePosition(82);
       syncUIFromState();
       updateLivePreview();
+      initSubtitleDrag();
       loadEditorVideo(clipId);
       loadClipWords(clipId);
       loadClipFaceTrack(clipId);
@@ -624,16 +685,25 @@
       v.pause();
       v.removeAttribute('src');
       v.load();
-      // Start muted so the browser allows autoplay; user can unmute.
-      v.muted = true;
-      if (snd) snd.textContent = '🔇';
+      // Start unmuted as requested by user
+      v.muted = false;
+      v.volume = 1.0;
+      if (snd) snd.textContent = '🔊';
       status.textContent = 'Memuat video sumber...';
       btn.textContent = 'Putar video';
       v.src = '/api/clips/' + clipId + '/preview';
       v.load();
       v.onloadeddata = () => {
         status.textContent = 'Real-time preview aktif';
-        v.play().catch(() => {});
+        const p = v.play();
+        if (p !== undefined) {
+          p.catch(() => {
+            // Fallback only if browser autoplay policy blocks unmuted audio on start
+            v.muted = true;
+            if (snd) snd.textContent = '🔇';
+            v.play().catch(() => {});
+          });
+        }
       };
       v.onerror = () => { status.textContent = 'Video sumber tidak tersedia'; };
       v.onplay = () => {
@@ -697,6 +767,20 @@
       return groups;
     }
 
+    function resolveCssFontFamily(fontName) {
+      if (!fontName) return "'Poppins', sans-serif";
+      const name = fontName.trim().toLowerCase();
+      if (name.includes('poppins')) return "'Poppins', sans-serif";
+      if (name.includes('impact')) return "'Impact', 'Arial Black', sans-serif";
+      if (name.includes('montserrat')) return "'Montserrat', sans-serif";
+      if (name.includes('oswald')) return "'Oswald', sans-serif";
+      if (name.includes('segoe')) return "'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif";
+      if (name.includes('trebuchet')) return "'Trebuchet MS', sans-serif";
+      if (name.includes('tahoma')) return "'Tahoma', sans-serif";
+      if (name.includes('arial')) return "'Arial', Helvetica, sans-serif";
+      return `'${fontName}', sans-serif`;
+    }
+
     let lastRenderedPhraseIndex = -1;
 
     function renderSubtitleOverlay() {
@@ -710,7 +794,7 @@
         return;
       }
       box.style.display = 'flex';
-      box.className = 'sub-preview-box pos-' + (editorState.position === 'middle' ? 'center' : editorState.position);
+      applySubtitlePosition(editorState.customPosY || 82, false);
 
       const ow = editorState.outlineW || 0;
       const stroke = ow > 0
@@ -720,6 +804,9 @@
       el.style.background = editorState.boxBg ? 'rgba(0,0,0,0.65)' : 'transparent';
       el.style.padding = editorState.boxBg ? '6px 14px' : '0';
       el.style.borderRadius = editorState.boxBg ? '8px' : '0';
+      el.style.fontFamily = resolveCssFontFamily(editorState.fontName);
+      el.style.fontWeight = editorState.fontWeight || '700';
+      el.style.fontSize = Math.max(14, Math.round(editorState.fontSize * 0.26)) + 'px';
 
       if (!editorState.wordsLoaded) { el.textContent = ''; return; }
       if (!editorState.words.length) {
@@ -800,8 +887,8 @@
     function updateLivePreview() {
       const text = document.getElementById('live-sub-text');
       if (!text) return;
-      text.style.fontFamily = `'${editorState.fontName}', sans-serif`;
-      text.style.fontWeight = editorState.fontWeight;
+      text.style.fontFamily = resolveCssFontFamily(editorState.fontName);
+      text.style.fontWeight = editorState.fontWeight || '700';
       text.style.fontSize = Math.max(14, Math.round(editorState.fontSize * 0.26)) + 'px';
       renderSubtitleOverlay();
     }
@@ -889,13 +976,114 @@
       renderSubtitleOverlay();
     }
 
+    function applySubtitlePosition(posY, updateState = true) {
+      const box = document.getElementById('live-sub-box');
+      const badge = document.getElementById('sub-drag-badge');
+      if (!box) return;
+      const clampedY = Math.max(12, Math.min(88, posY));
+      box.style.top = clampedY.toFixed(1) + '%';
+      box.style.transform = 'translateY(-50%)';
+      box.style.bottom = 'auto';
+      if (badge) {
+        badge.textContent = `↕ ${Math.round(clampedY)}%`;
+      }
+      if (updateState) {
+        editorState.customPosY = clampedY;
+        editorState.marginV = Math.max(100, Math.min(1720, Math.round(1920 * (1 - clampedY / 100))));
+        if (Math.abs(clampedY - 82) <= 3) {
+          editorState.position = 'bottom';
+        } else if (Math.abs(clampedY - 50) <= 3) {
+          editorState.position = 'center';
+        } else if (Math.abs(clampedY - 18) <= 3) {
+          editorState.position = 'top';
+        } else {
+          editorState.position = 'custom';
+        }
+        ['top', 'center', 'bottom'].forEach(p => {
+          const btn = document.getElementById('pos-' + p);
+          if (btn) btn.classList.toggle('active', editorState.position === p);
+        });
+      }
+    }
+
     function setSubtitlePosition(pos) {
       editorState.position = pos;
-      ['top', 'center', 'bottom'].forEach(p => {
-        const btn = document.getElementById('pos-' + p);
-        if (btn) btn.classList.toggle('active', p === pos);
+      let targetY = 82;
+      if (pos === 'top') targetY = 18;
+      else if (pos === 'center' || pos === 'middle') targetY = 50;
+      else if (pos === 'bottom') targetY = 82;
+      applySubtitlePosition(targetY, true);
+      const frame = document.getElementById('live-sub-frame');
+      if (frame) frame.classList.add('selected');
+    }
+
+    let subtitleDragInitialized = false;
+    function initSubtitleDrag() {
+      const frame = document.getElementById('live-sub-frame');
+      const box = document.getElementById('live-sub-box');
+      const phone = document.querySelector('.phone-frame');
+      const snapGuide = document.getElementById('sub-snap-guide-h');
+      if (!frame || !box || !phone) return;
+
+      frame.classList.add('selected');
+
+      if (subtitleDragInitialized) return;
+      subtitleDragInitialized = true;
+
+      let isDragging = false;
+      let startY = 0;
+      let startPosY = 82;
+
+      phone.addEventListener('pointerdown', (e) => {
+        if (!frame.contains(e.target)) {
+          frame.classList.remove('selected');
+        }
       });
-      renderSubtitleOverlay();
+
+      frame.addEventListener('pointerdown', (e) => {
+        frame.classList.add('selected');
+        isDragging = true;
+        startY = e.clientY;
+        startPosY = editorState.customPosY || 82;
+        box.classList.add('is-dragging');
+        try { frame.setPointerCapture(e.pointerId); } catch (_) {}
+        e.preventDefault();
+        e.stopPropagation();
+      });
+
+      frame.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const deltaY = e.clientY - startY;
+        const phoneRect = phone.getBoundingClientRect();
+        if (!phoneRect.height) return;
+        const deltaPct = (deltaY / phoneRect.height) * 100;
+        let newY = startPosY + deltaPct;
+
+        if (Math.abs(newY - 50) < 2.5) {
+          newY = 50;
+          if (snapGuide) snapGuide.style.display = 'block';
+        } else {
+          if (snapGuide) snapGuide.style.display = 'none';
+        }
+
+        applySubtitlePosition(newY, true);
+        e.preventDefault();
+      });
+
+      const endDrag = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        box.classList.remove('is-dragging');
+        if (snapGuide) snapGuide.style.display = 'none';
+        try {
+          if (e && e.pointerId && frame.hasPointerCapture(e.pointerId)) {
+            frame.releasePointerCapture(e.pointerId);
+          }
+        } catch (_) {}
+      };
+
+      frame.addEventListener('pointerup', endDrag);
+      frame.addEventListener('pointercancel', endDrag);
     }
 
     function setFontFamily(fn) { editorState.fontName = fn; updateLivePreview(); }
@@ -998,6 +1186,7 @@
             text_transform: editorState.allCaps ? 'upper' : 'none',
             box: Boolean(editorState.boxBg),
             mode: 'karaoke',
+            margin_v: editorState.marginV || 420,
           },
           video: {
             face_tracking: Boolean(editorState.faceTracking),
@@ -1033,6 +1222,24 @@
       } catch (err) { activelyRendering.delete(clipId); showToast('Gagal render: ' + err.message, 'danger'); refresh(); }
     }
 
+    function copyEditorCaption(btn) {
+      const text = editorState.caption || '';
+      if (!text) {
+        showToast('Tidak ada caption untuk klip ini.', 'danger');
+        return;
+      }
+      copyText(btn, text);
+    }
+
+    function copyPlayerCaption(btn) {
+      const text = currentPlayerCaption || '';
+      if (!text) {
+        showToast('Tidak ada caption untuk klip ini.', 'danger');
+        return;
+      }
+      copyText(btn, text);
+    }
+
     function openPlayer(clipId, hook, idx) {
       const modal = document.getElementById('player-modal');
       const video = document.getElementById('modal-video');
@@ -1040,6 +1247,11 @@
       document.getElementById('modal-hook').textContent = hook ? '"' + hook + '"' : '';
       document.getElementById('modal-download-btn').href = '/api/clips/' + clipId + '/download';
       document.getElementById('modal-video-source').src = '/api/clips/' + clipId + '/stream';
+      const clip = clipsData[clipId] || {};
+      const clipCaption = (clip.caption && clip.caption.trim()) || hook || '';
+      currentPlayerCaption = clipCaption;
+      const playerCapEl = document.getElementById('player-caption-text');
+      if (playerCapEl) playerCapEl.textContent = clipCaption || '(Belum ada caption untuk klip ini)';
       video.load();
       video.play().catch(() => {});
       modal.classList.add('open');
@@ -1228,6 +1440,7 @@
         if (j.clips && j.clips.length > 0) {
           document.getElementById('no-clips-msg').style.display = 'none';
           j.clips.forEach(c => {
+            clipsData[c.id] = c;
             if (c.rendered && activelyRendering.has(c.id)) {
               activelyRendering.delete(c.id);
               showToast('Klip #' + (c.idx + 1) + ' selesai.', 'success');
