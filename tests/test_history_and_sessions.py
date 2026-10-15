@@ -220,3 +220,41 @@ def test_batch_delete_jobs_and_clips():
     assert storage.get_job(j2.id) is None
     assert storage.get_clip(c3.id) is None
 
+
+def test_job_page_renders_sound_button_and_caption_copy():
+    storage.init_db()
+    job = storage.create_job(
+        source_type="url",
+        source_name="Caption & Sound Test",
+        source_url="https://youtu.be/sample_caption",
+    )
+    clip = storage.Clip(
+        id=uuid.uuid4().hex,
+        job_id=job.id,
+        idx=0,
+        start_s=0.0,
+        end_s=15.0,
+        hook="Hook viral keren",
+        caption="Ini caption viral siap copypaste ke TikTok #fyp",
+        rendered=False,
+        status="idle",
+    )
+    storage.replace_clips(job.id, [clip])
+
+    resp = client.get(f"/jobs/{job.id}")
+    assert resp.status_code == 200
+    html = resp.text
+
+    # 1. Preview video: no hardcoded muted attribute, sound button exists
+    assert 'id="ed-sound-btn"' in html
+    assert 'toggleEditorSound()' in html
+    assert '<video id="ed-video" playsinline loop' in html
+    assert '<video id="ed-video" playsinline muted loop' not in html
+
+    # 2. Caption copy button
+    assert 'class="clip-caption"' in html
+    assert 'class="copy-btn"' in html
+    assert 'copyText(this,' in html
+    assert 'Ini caption viral siap copypaste ke TikTok #fyp' in html
+
+
