@@ -495,6 +495,40 @@ def clip_transcript(clip_id: str, _: None = Depends(require_auth)):
             "duration": round(end - start, 3), "reason": "ok"}
 
 
+@app.get("/api/clips/{clip_id}/facetrack")
+def clip_facetrack(clip_id: str, _: None = Depends(require_auth)):
+    """Return face-tracking keyframes for real-time CSS preview in the style editor."""
+    clip = storage.get_clip(clip_id)
+    if not clip:
+        raise HTTPException(404, "Klip tidak ditemukan")
+    job = storage.get_job(clip.job_id)
+    if not job or not job.source_path or not Path(job.source_path).is_file():
+        return {"found": False, "keyframes": []}
+
+    cache_file = config.DATA_DIR / "facetracks" / f"{clip.id}.json"
+    if cache_file.is_file():
+        try:
+            return json.loads(cache_file.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    try:
+        from app.media import facetrack
+        work = config.WORK_DIR / f"ft_prev_{clip.id}"
+        work.mkdir(parents=True, exist_ok=True)
+        try:
+            ft = facetrack.track_faces(Path(job.source_path), float(clip.start_s), float(clip.end_s), work)
+            res = {"found": ft.found_any, "keyframes": [[round(t, 3), round(x, 4)] for t, x in ft.keyframes]}
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            cache_file.write_text(json.dumps(res), encoding="utf-8")
+            return res
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("Face tracking preview gagal: %s", exc)
+        return {"found": False, "keyframes": []}
+
+
 @app.post("/api/clips/{clip_id}/render")
 async def api_render_clip(clip_id: str, request: Request, _: None = Depends(require_auth)):
     """Enqueue a render job for an individual clip with optional custom styling."""

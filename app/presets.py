@@ -37,11 +37,41 @@ DEFAULT_HOOK_TEMPLATE = {
         "font_color": "#FFFFFF", "highlight_color": "#00FF66",
         "outline_color": "#000000", "margin_v": 420, "words_per_phrase": 4,
     },
-    "video": {"background_blur": 20, "overlay_enabled": True, "width": 1080},
+    "video": {"background_blur": 20, "overlay_enabled": True, "width": 1080, "face_tracking": True, "dynamic_zoom": True},
 }
 
 # 5 built-in presets (parity with the reference project).
 PRESETS: dict[str, dict] = {
+    "super_simple": {
+        "name": "Super Simple",
+        "subtitle": {"font_name": "Poppins", "font_size": 75, "font_color": "#FFFFFF",
+                     "highlight_color": "#FFFFFF", "outline_w": 5, "outline_color": "#000000",
+                     "words_per_phrase": 3, "margin_v": 420, "text_transform": "upper"},
+    },
+    "simple_boxy": {
+        "name": "Simple Boxy",
+        "subtitle": {"font_name": "Poppins", "font_size": 75, "font_color": "#FFFFFF",
+                     "highlight_color": "#0169EE", "outline_w": 0, "box": True,
+                     "words_per_phrase": 3, "margin_v": 420, "text_transform": "upper"},
+    },
+    "subtitles": {
+        "name": "Subtitles",
+        "subtitle": {"font_name": "Poppins", "font_size": 75, "font_color": "#FFFFFF",
+                     "highlight_color": "#00E5FF", "outline_w": 4, "outline_color": "#000000",
+                     "words_per_phrase": 3, "margin_v": 420, "text_transform": "upper"},
+    },
+    "spoken": {
+        "name": "Spoken Green",
+        "subtitle": {"font_name": "Poppins", "font_size": 75, "font_color": "#FFFFFF",
+                     "highlight_color": "#00FF88", "outline_w": 5, "outline_color": "#000000",
+                     "words_per_phrase": 3, "margin_v": 420, "text_transform": "upper"},
+    },
+    "they_are_spoken": {
+        "name": "They Are Spoken",
+        "subtitle": {"font_name": "Poppins", "font_size": 75, "font_color": "#FFFFFF",
+                     "highlight_color": "#0169EE", "outline_w": 0,
+                     "words_per_phrase": 3, "margin_v": 420, "text_transform": "upper"},
+    },
     "capcut": {
         "name": "CapCut Modern",
         "hook": {"font_color": "#FFFFFF", "highlight_color": "#00FF66",

@@ -257,4 +257,37 @@ def test_job_page_renders_sound_button_and_caption_copy():
     assert 'copyText(this,' in html
     assert 'Ini caption viral siap copypaste ke TikTok #fyp' in html
 
+    # 3. Face track toggle button in preview toolbar
+    assert 'id="ed-facetrack-btn"' in html
+    assert 'toggleFaceTracking()' in html
+    assert '👤 Face Track: ON' in html
+
+
+def test_facetrack_endpoint_and_preset_default():
+    from app import presets
+    assert presets.DEFAULT_HOOK_TEMPLATE["video"]["face_tracking"] is True
+
+    storage.init_db()
+    job = storage.create_job(
+        source_type="file",
+        source_name="facetrack_test.mp4",
+    )
+    clip = storage.Clip(
+        id=uuid.uuid4().hex,
+        job_id=job.id,
+        idx=0,
+        start_s=0.0,
+        end_s=10.0,
+        hook="Face track hook",
+        rendered=False,
+    )
+    storage.replace_clips(job.id, [clip])
+
+    resp = client.get(f"/api/clips/{clip.id}/facetrack")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "found" in data
+    assert "keyframes" in data
+
+
 

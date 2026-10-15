@@ -180,6 +180,51 @@ def _hex_to_ass_bgr(color: str) -> str:
     return f"&H00{b}{g}{r}".upper()
 
 
+def _group_words_by_splitting(words: list, splitting: str = "20letters", words_per_phrase: int = 4) -> list[list]:
+    """Group words into phrases according to 2short.ai character length or word count."""
+    sp = str(splitting).lower().replace(" ", "")
+    if sp in ("oneword", "1word", "single"):
+        max_chars = 0
+        max_words = 1
+    elif "10" in sp:
+        max_chars = 10
+        max_words = 6
+    elif "15" in sp:
+        max_chars = 15
+        max_words = 7
+    elif "20" in sp:
+        max_chars = 20
+        max_words = 8
+    elif "25" in sp:
+        max_chars = 25
+        max_words = 9
+    elif "30" in sp:
+        max_chars = 30
+        max_words = 10
+    elif sp == "none":
+        max_chars = 48
+        max_words = 12
+    else:
+        max_chars = 22
+        max_words = words_per_phrase or 4
+
+    groups = []
+    cur = []
+    cur_len = 0
+    for w in words:
+        txt = (getattr(w, "text", "") or "").strip()
+        cur.append(w)
+        cur_len += len(txt) + 1
+        ends_punct = txt.endswith((".", "!", "?", ":", ";"))
+        if ends_punct or len(cur) >= max_words or (max_chars > 0 and cur_len >= max_chars):
+            groups.append(cur)
+            cur = []
+            cur_len = 0
+    if cur:
+        groups.append(cur)
+    return groups
+
+
 def build_ass(
     segments: list[Segment],
     *,
@@ -197,6 +242,11 @@ def build_ass(
     words_per_phrase: int = 4,
     text_transform: str = "upper",
     box: bool = False,
+    subtitles_enabled: bool = True,
+    splitting: str = "20letters",
+    highlight_type: str = "current",
+    transition: str = "word_bounce",
+    word_reveal: bool = False,
 ) -> str:
     font_name = font_name or config.SUBTITLE_FONT_NAME
     def xf(t: str) -> str:
@@ -218,6 +268,9 @@ Style: Default,{font_name},{font_size},{_hex_to_ass_bgr(primary_color)},&H000000
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
+    if not subtitles_enabled:
+        return header
+
     events: list[str] = []
 
     def emit(start: float, end: float, text: str, *, raw: bool = False) -> None:
@@ -234,14 +287,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         # Fallback: karaoke needs per-word timings; if a segment has none, emit
         # the plain line instead of silently producing no subtitle at all.
         if mode == "karaoke" and seg.words:
-            phrase: list = []
-            for w in seg.words:
-                phrase.append(w)
-                if w.text.endswith((".", "!", "?", ":", ";")) or len(phrase) >= words_per_phrase:
-                    _emit_karaoke(emit, phrase, clip_start, highlight_color, primary_color, xf)
-                    phrase = []
-            if phrase:
-                _emit_karaoke(emit, phrase, clip_start, highlight_color, primary_color, xf)
+            groups = _group_words_by_splitting(seg.words, splitting=splitting, words_per_phrase=words_per_phrase)
+            for phrase in groups:
+                _emit_karaoke(emit, phrase, clip_start, highlight_color, primary_color, xf,
+                              highlight_type=highlight_type, transition=transition, word_reveal=word_reveal)
         elif seg.text and seg.text.strip():
             start = max(seg.start, clip_start) - clip_start
             end = min(seg.end, clip_end) - clip_start
@@ -255,25 +304,79 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return header + "\n".join(events) + "\n"
 
 
-def _emit_karaoke(emit, phrase, clip_start: float, highlight: str, primary: str, xf=None) -> None:
+def _emit_karaoke(emit, phrase, clip_start: float, highlight: str, primary: str, xf=None,
+                  highlight_type: str = "current", transition: str = "word_bounce",
+                  word_reveal: bool = False) -> None:
     hi = _hex_to_ass_bgr(highlight)
     pr = _hex_to_ass_bgr(primary)
     xf = xf or (lambda t: t)
     n = len(phrase)
+
+    # Clean transition mode
+    t_mode = str(transition or "none").lower()
+
     for i, word in enumerate(phrase):
         w_start = max(word.start, clip_start) - clip_start
         next_start = phrase[i + 1].start if i + 1 < n else word.end
         w_end = next_start - clip_start
         if w_end <= w_start:
             w_end = w_start + 0.15
-        before = " ".join(xf(_clean_sub_text(w.text)) for w in phrase[:i])
-        after = " ".join(xf(_clean_sub_text(w.text)) for w in phrase[i + 1:])
-        active = xf(_clean_sub_text(word.text))
-        line = (before + " " if before else "")
-        # Active word pops: bigger + highlight colour + slight upward shift.
-        line += "{\\c" + hi + "\\fscx114\\fscy114}" + active + "{\\fscx100\\fscy100\\c" + pr + "}"
-        if after:
-            line += " " + after
+
+        active_raw = xf(_clean_sub_text(word.text))
+
+        # Spring pop animation on active word using ASS tags:
+        if "bounce" in t_mode:
+            anim_pop = r"{\fscx114\fscy114\t(0,180,\fscx108\fscy108)}"
+            anim_reset = r"{\fscx100\fscy100}"
+        elif "slide" in t_mode:
+            anim_pop = r"{\fscy112\t(0,150,\fscy100)}"
+            anim_reset = r"{\fscy100}"
+        else:
+            anim_pop = r"{\fscx114\fscy114}"
+            anim_reset = r"{\fscx100\fscy100}"
+
+        hl_mode = str(highlight_type or "current").lower()
+
+        if hl_mode == "none":
+            # No highlight color; only animation if active
+            parts = []
+            for j, w in enumerate(phrase):
+                if word_reveal and j > i:
+                    continue
+                w_txt = xf(_clean_sub_text(w.text))
+                if j == i and anim_pop:
+                    parts.append(f"{anim_pop}{w_txt}{anim_reset}")
+                else:
+                    parts.append(w_txt)
+            line = " ".join(parts)
+
+        elif hl_mode == "upto":
+            # Up to current active word highlighted
+            parts = []
+            for j, w in enumerate(phrase):
+                if word_reveal and j > i:
+                    continue
+                w_txt = xf(_clean_sub_text(w.text))
+                if j < i:
+                    parts.append(f"{{\\c{hi}}}{w_txt}{{\\c{pr}}}")
+                elif j == i:
+                    parts.append(f"{anim_pop}{{\\c{hi}}}{w_txt}{anim_reset}{{\\c{pr}}}")
+                else:
+                    parts.append(f"{{\\c{pr}}}{w_txt}")
+            line = " ".join(parts)
+
+        else:
+            # Default "current" or "background"
+            before_words = [xf(_clean_sub_text(w.text)) for w in phrase[:i]]
+            before = " ".join(before_words)
+            active = f"{anim_pop}{{\\c{hi}}}{active_raw}{anim_reset}{{\\c{pr}}}"
+            if word_reveal:
+                line = (before + " " if before else "") + active
+            else:
+                after_words = [xf(_clean_sub_text(w.text)) for w in phrase[i + 1:]]
+                after = " ".join(after_words)
+                line = (before + " " if before else "") + active + (" " + after if after else "")
+
         emit(w_start, w_end, line, raw=True)
 
 
@@ -400,6 +503,7 @@ def render_clip(
     # libass matches the exact file (falls back to the configured name).
     ass_font_name = _internal_font_name(font_path) if font_path else sub_font_name
     ass_path = work_dir / f"clip_{start:.0f}_{end:.0f}.ass"
+    subtitles_enabled = bool(sub_cfg.get("subtitles_enabled", sub_cfg.get("enabled", True)))
     ass_doc = build_ass(
         segments, clip_start=start, clip_end=end, mode=subtitle_mode,
         font_name=ass_font_name,
@@ -413,6 +517,11 @@ def render_clip(
         words_per_phrase=int(sub_cfg.get("words_per_phrase", 4)),
         text_transform=sub_cfg.get("text_transform", "upper"),
         box=bool(sub_cfg.get("box", False)),
+        subtitles_enabled=subtitles_enabled,
+        splitting=str(sub_cfg.get("splitting", "20letters")),
+        highlight_type=str(sub_cfg.get("highlight_type", "current")),
+        transition=str(sub_cfg.get("transition", "word_bounce")),
+        word_reveal=bool(sub_cfg.get("word_reveal", False)),
     )
     ass_path.write_text(ass_doc, encoding="utf-8")
 

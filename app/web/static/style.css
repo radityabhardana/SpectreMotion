@@ -690,3 +690,235 @@ body.auth { display: grid; place-items: center; min-height: 100vh; }
   .editor-footer .editor-actions .btn { flex: 1; }
   .preset-grid-mini { grid-template-columns: 1fr 1fr; }
 }
+
+.btn.active-toggle {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.btn.active-toggle:hover {
+  background: var(--accent);
+  filter: brightness(1.08);
+}
+
+/* ========================================================
+   2short.ai Style Subtitle Editor Controls & Animations
+   ======================================================== */
+
+.editor-section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+/* Bento Preset Grid */
+.preset-grid-2short {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+@media (max-width: 600px) {
+  .preset-grid-2short { grid-template-columns: 1fr 1fr; }
+}
+.preset-card-2s {
+  background: #141720;
+  border: 2px solid #232738;
+  border-radius: 12px;
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all .2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding: 8px;
+  text-align: center;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+.preset-card-2s:hover {
+  border-color: #3b4259;
+  transform: translateY(-2px);
+  background: #181c27;
+}
+.preset-card-2s.active {
+  border-color: #0169EE;
+  background: #131b2c;
+  box-shadow: 0 0 0 1px #0169EE, 0 4px 14px rgba(1, 105, 238, 0.25);
+}
+
+/* 2short.ai Pill Buttons with Checkmark */
+.pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pill-btn {
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .16s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+.pill-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface-3);
+}
+.pill-btn.active {
+  background: rgba(1, 105, 238, 0.14);
+  border-color: #0169EE;
+  color: #3b82f6;
+  font-weight: 600;
+}
+.pill-btn .check-icon {
+  font-size: 11px;
+  font-weight: 800;
+  display: none;
+}
+.pill-btn.active .check-icon {
+  display: inline-block;
+}
+
+/* Color Chip Row */
+.color-chip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 14px 4px 6px;
+  width: fit-content;
+  margin-top: 6px;
+}
+.color-circle-input {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: none;
+  -webkit-appearance: none;
+}
+.color-circle-input::-webkit-color-swatch-wrapper { padding: 0; }
+.color-circle-input::-webkit-color-swatch { border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); }
+
+/* Settings Box Card (for Font Settings) */
+.setting-box-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.setting-box-card .form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+  align-items: center;
+}
+
+/* iOS Toggle Switches */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+.toggle-row + .toggle-row {
+  border-top: 1px solid var(--border);
+}
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; inset: 0;
+  background-color: #2b3040;
+  transition: .22s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute; content: "";
+  height: 18px; width: 18px; left: 3px; bottom: 3px;
+  background-color: white;
+  transition: .22s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+input:checked + .slider { background-color: #0169EE; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Smooth Elastic Bounce & Slide Animations */
+@keyframes smoothWordBounce {
+  0% { transform: translateY(0) scale(1); }
+  28% { transform: translateY(-7px) scale(1.18); }
+  55% { transform: translateY(-1px) scale(1.06); }
+  78% { transform: translateY(-3px) scale(1.10); }
+  100% { transform: translateY(-2px) scale(1.08); }
+}
+.anim-word-bounce {
+  display: inline-block;
+  animation: smoothWordBounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform;
+}
+
+@keyframes smoothSubBounce {
+  0% { transform: scale(0.93); opacity: 0.8; }
+  45% { transform: scale(1.05); }
+  75% { transform: scale(0.98); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.anim-sub-bounce {
+  animation: smoothSubBounce 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes smoothWordSlideUp {
+  0% { transform: translateY(8px); opacity: 0.3; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.anim-word-slide {
+  display: inline-block;
+  animation: smoothWordSlideUp 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes smoothSubSlideUp {
+  0% { transform: translateY(14px); opacity: 0.2; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.anim-sub-slide {
+  animation: smoothSubSlideUp 0.28s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.sub-word {
+  display: inline-block;
+  transition: color 0.15s ease, background 0.15s ease;
+  margin: 0 3px;
+}
+

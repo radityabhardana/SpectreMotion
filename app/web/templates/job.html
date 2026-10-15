@@ -162,154 +162,208 @@
             </div>
             <div style="position: absolute; bottom: 8px; width: 60px; height: 3px; background: rgba(255,255,255,0.25); border-radius: 999px; z-index:4;"></div>
           </div>
-          <div style="display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
             <button type="button" class="btn btn-sm btn-secondary" id="ed-play-btn" onclick="toggleEditorVideo()">Putar video</button>
             <button type="button" class="btn btn-sm btn-secondary" id="ed-sound-btn" onclick="toggleEditorSound()" title="Suara">🔇</button>
+            <button type="button" class="btn btn-sm btn-secondary active-toggle" id="ed-facetrack-btn" onclick="toggleFaceTracking()" title="Face Motion Tracking (Otomatis ikuti wajah pembicara)">👤 Face Track: ON</button>
             <span style="font-size: 11px; color: var(--text-3);" id="ed-video-status">Memuat video...</span>
           </div>
         </div>
 
-        <div class="editor-controls">
-          <div class="editor-tabs">
-            <button type="button" class="editor-tab active" data-tab="text" onclick="setEditorTab('text')">Gaya Teks</button>
-            <button type="button" class="editor-tab" data-tab="motion" onclick="setEditorTab('motion')">Posisi &amp; Gerak</button>
-            <button type="button" class="editor-tab" data-tab="color" onclick="setEditorTab('color')">Warna</button>
+        <div class="editor-controls" style="overflow-y: auto; max-height: calc(85vh - 120px); padding-right: 6px;">
+          <!-- 2short.ai Header with Subtitles Toggle -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">✏️</span>
+              <span style="font-size: 16px; font-weight: 700; color: var(--text);">Subtitles</span>
+            </div>
+            <label class="switch" title="Aktifkan / nonaktifkan subtitle">
+              <input type="checkbox" id="ed-subtitles-enabled" checked onchange="toggleSubtitlesEnabled(this.checked)" />
+              <span class="slider"></span>
+            </label>
           </div>
 
-          <!-- Tab: Gaya Teks -->
-          <div class="editor-panel" data-tab="text">
-            <div class="editor-section">
-              <div class="editor-section-title">Preset</div>
-              <p class="editor-hint">Cara cepat: pilih salah satu, semua diatur otomatis.</p>
-              <div class="preset-grid-mini">
-                <div class="preset-tile active" id="tile-hormozi" onclick="selectPreset('hormozi')">
-                  <span class="preset-tile-name">Hormozi</span>
-                  <span class="preset-tile-desc">Kuning tebal, 2 kata</span>
-                </div>
-                <div class="preset-tile" id="tile-capcut" onclick="selectPreset('capcut')">
-                  <span class="preset-tile-name">CapCut</span>
-                  <span class="preset-tile-desc">Hijau, 3 kata</span>
-                </div>
-                <div class="preset-tile" id="tile-neon" onclick="selectPreset('neon_badge')">
-                  <span class="preset-tile-name">Neon</span>
-                  <span class="preset-tile-desc">Cyan modern</span>
-                </div>
-                <div class="preset-tile" id="tile-cinematic" onclick="selectPreset('cinematic')">
-                  <span class="preset-tile-name">Cinematic</span>
-                  <span class="preset-tile-desc">Emas, tengah</span>
-                </div>
-                <div class="preset-tile" id="tile-minimal" onclick="selectPreset('minimal')">
-                  <span class="preset-tile-name">Minimal</span>
-                  <span class="preset-tile-desc">Putih, tanpa outline</span>
+          <!-- Section 1: Subtitle style -->
+          <div class="editor-section">
+            <div class="editor-section-title" style="margin-bottom: 2px;">Subtitle style</div>
+            <p class="editor-hint" style="margin-bottom: 12px;">Choose a subtitle style preset to get started</p>
+            <div class="preset-grid-2short">
+              <div class="preset-card-2s" id="preset-super_simple" onclick="select2ShortPreset('super_simple')">
+                <span style="font-weight: 800; font-size: 12.5px; color: #ffffff; letter-spacing: 0.5px;">SUPER SIMPLE</span>
+              </div>
+              <div class="preset-card-2s" id="preset-simple_boxy" onclick="select2ShortPreset('simple_boxy')">
+                <span style="background: #0169EE; color: #ffffff; font-weight: 800; font-size: 11px; padding: 4px 8px; border-radius: 4px; letter-spacing: 0.5px;">SIMPLE BOXY</span>
+              </div>
+              <div class="preset-card-2s" id="preset-subtitles" onclick="select2ShortPreset('subtitles')">
+                <span style="font-weight: 900; font-size: 12.5px; color: #ffffff; letter-spacing: 1px;">SUBTITLES</span>
+              </div>
+              <div class="preset-card-2s" id="preset-spoken" onclick="select2ShortPreset('spoken')">
+                <span style="font-weight: 900; font-size: 12.5px; color: #00FF88; letter-spacing: 0.8px;">SPOKEN</span>
+              </div>
+              <div class="preset-card-2s active" id="preset-they_are_spoken" onclick="select2ShortPreset('they_are_spoken')">
+                <div style="font-size: 11px; font-weight: 800; line-height: 1.25;">
+                  <div style="color: #ffffff;">THEY ARE</div>
+                  <div style="background: #0169EE; color: #ffffff; padding: 2px 8px; border-radius: 4px; margin-top: 2px;">SPOKEN</div>
                 </div>
               </div>
-            </div>
-
-            <div class="editor-section">
-              <div class="editor-section-title">Font</div>
-              <p class="editor-hint">Nama font, ukuran, dan garis tepi teks.</p>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
-                <div>
-                  <label style="font-size: 11px; color: var(--text-3);">Jenis</label>
-                  <select id="ed-font-family" style="width: 100%; margin-top: 4px;" onchange="setFontFamily(this.value)">
-                    <option value="Arial Bold">Arial Bold</option>
-                    <option value="Impact">Impact</option>
-                    <option value="Segoe UI Bold">Segoe UI Bold</option>
-                    <option value="Trebuchet MS Bold">Trebuchet MS Bold</option>
-                    <option value="Tahoma Bold">Tahoma Bold</option>
-                  </select>
-                </div>
-                <div>
-                  <label style="font-size: 11px; color: var(--text-3);">Ukuran</label>
-                  <div class="range-wrap" style="margin-top: 6px;">
-                    <input type="range" id="ed-font-size" min="50" max="95" value="76" oninput="setFontSize(this.value)" />
-                    <span class="range-val" id="ed-font-size-val">76px</span>
-                  </div>
-                </div>
-                <div>
-                  <label style="font-size: 11px; color: var(--text-3);">Tebal outline</label>
-                  <div class="range-wrap" style="margin-top: 6px;">
-                    <input type="range" id="ed-outline-w" min="0" max="8" value="5" oninput="setOutlineWidth(this.value)" />
-                    <span class="range-val" id="ed-outline-w-val">5px</span>
-                  </div>
-                </div>
-                <div>
-                  <label style="font-size: 11px; color: var(--text-3);">Warna outline</label>
-                  <div class="color-swatches" style="margin-top: 6px;">
-                    <input type="color" id="ed-outline-color" class="color-picker-custom" value="#000000" onchange="setOutlineColor(this.value)" />
-                    <span id="ed-outline-color-hex" style="font-size: 12px; color: var(--text-2);">#000000</span>
-                  </div>
-                </div>
-              </div>
-              <div style="display: flex; gap: 18px; margin-top: 10px; flex-wrap: wrap;">
-                <label class="chk"><input type="checkbox" id="ed-all-caps" checked onchange="setAllCaps(this.checked)" /><span>Huruf besar</span></label>
-                <label class="chk"><input type="checkbox" id="ed-karaoke" checked onchange="setKaraoke(this.checked)" /><span>Karaoke</span></label>
-                <label class="chk"><input type="checkbox" id="ed-box" onchange="setBox(this.checked)" /><span>Kotak latar</span></label>
+              <div class="preset-card-2s" id="preset-hormozi" onclick="select2ShortPreset('hormozi')">
+                <span style="font-weight: 900; font-size: 13px; color: #FFE600; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000; letter-spacing: 0.5px;">HORMOZI</span>
               </div>
             </div>
           </div>
 
-          <!-- Tab: Posisi & Gerak -->
-          <div class="editor-panel" data-tab="motion" hidden>
-            <div class="editor-section">
-              <div class="editor-section-title">Posisi subtitle</div>
-              <p class="editor-hint">Lokasi teks di layar.</p>
-              <div class="seg-group">
-                <button type="button" class="seg-btn active" id="pos-btn-bottom" onclick="setSubtitlePosition('bottom')">Bawah</button>
-                <button type="button" class="seg-btn" id="pos-btn-center" onclick="setSubtitlePosition('center')">Tengah</button>
-                <button type="button" class="seg-btn" id="pos-btn-top" onclick="setSubtitlePosition('top')">Atas</button>
-              </div>
+          <!-- Section 2: Subtitle transition -->
+          <div class="editor-section">
+            <div class="editor-section-title">Subtitle transition</div>
+            <div class="pill-group" style="margin-top: 8px;">
+              <button type="button" class="pill-btn" id="tran-none" onclick="setSubtitleTransition('none')"><span class="check-icon">✓</span>None</button>
+              <button type="button" class="pill-btn" id="tran-sub-bounce" onclick="setSubtitleTransition('sub_bounce')"><span class="check-icon">✓</span>Subtitle bounce</button>
+              <button type="button" class="pill-btn" id="tran-sub-slide" onclick="setSubtitleTransition('sub_slide')"><span class="check-icon">✓</span>Subtitle slide-up</button>
+              <button type="button" class="pill-btn active" id="tran-word-bounce" onclick="setSubtitleTransition('word_bounce')"><span class="check-icon">✓</span>Word bounce</button>
+              <button type="button" class="pill-btn" id="tran-word-slide" onclick="setSubtitleTransition('word_slide')"><span class="check-icon">✓</span>Word slide-up</button>
             </div>
+          </div>
 
-            <div class="editor-section">
-              <div class="editor-section-title">Transisi subtitle</div>
-              <p class="editor-hint">Cara teks muncul saat berganti.</p>
-              <div class="seg-group">
-                <button type="button" class="seg-btn active" id="tran-btn-None" onclick="setTransition('none')">None</button>
-                <button type="button" class="seg-btn" id="tran-btn-word-bounce" onclick="setTransition('bounce')">Word Bounce</button>
-                <button type="button" class="seg-btn" id="tran-btn-slide-up" onclick="setTransition('slide')">Slide Up</button>
-              </div>
+          <!-- Section 3: Word highlight -->
+          <div class="editor-section">
+            <div class="editor-section-title">Word highlight</div>
+            <div class="pill-group" style="margin-top: 8px;">
+              <button type="button" class="pill-btn" id="hl-none" onclick="setHighlightType('none')"><span class="check-icon">✓</span>None</button>
+              <button type="button" class="pill-btn" id="hl-current" onclick="setHighlightType('current')"><span class="check-icon">✓</span>Current only</button>
+              <button type="button" class="pill-btn" id="hl-upto" onclick="setHighlightType('upto')"><span class="check-icon">✓</span>Up to current</button>
+              <button type="button" class="pill-btn active" id="hl-background" onclick="setHighlightType('background')"><span class="check-icon">✓</span>Background</button>
             </div>
-
-            <div class="editor-section">
-              <div class="editor-section-title">Panjang frasa</div>
-              <p class="editor-hint">Berapa kata ditampilkan sekaligus.</p>
-              <div class="seg-group">
-                <button type="button" class="seg-btn" id="split-btn-1" onclick="setWordsPerPhrase(1)">1 kata</button>
-                <button type="button" class="seg-btn active" id="split-btn-2" onclick="setWordsPerPhrase(2)">2–3 kata</button>
-                <button type="button" class="seg-btn" id="split-btn-4" onclick="setWordsPerPhrase(4)">4–5 kata</button>
-              </div>
+            <div class="color-chip-row" style="margin-top: 10px;">
+              <input type="color" id="ed-color-chip" class="color-circle-input" value="#0169EE" onchange="setHighlightColor(this.value)" />
+              <span id="ed-color-chip-hex" style="font-family: monospace; font-size: 13px; font-weight: 600; color: var(--text);">#0169EEFF</span>
             </div>
+          </div>
 
-            <div class="editor-section">
-              <div class="editor-section-title">Framing</div>
-              <p class="editor-hint">Ikuti wajah &amp; zoom otomatis agar tetap di tengah.</p>
-              <div style="display: flex; gap: 24px; flex-wrap: wrap;">
-                <label class="chk"><input type="checkbox" id="ed-facetrack" checked /><span>Face tracking</span></label>
-                <label class="chk"><input type="checkbox" id="ed-zoom" checked /><span>Dynamic zoom</span></label>
+          <!-- Section 4: Subtitle splitting -->
+          <div class="editor-section">
+            <div class="editor-section-title" style="margin-bottom: 2px;">Subtitle splitting</div>
+            <p class="editor-hint" style="margin-bottom: 10px;">Customize subtitle length for optimal readability</p>
+            <div class="pill-group">
+              <button type="button" class="pill-btn" id="split-oneword" onclick="setSplitting('oneword')"><span class="check-icon">✓</span>One word</button>
+              <button type="button" class="pill-btn" id="split-10letters" onclick="setSplitting('10letters')"><span class="check-icon">✓</span>10 letters</button>
+              <button type="button" class="pill-btn" id="split-15letters" onclick="setSplitting('15letters')"><span class="check-icon">✓</span>15 letters</button>
+              <button type="button" class="pill-btn active" id="split-20letters" onclick="setSplitting('20letters')"><span class="check-icon">✓</span>20 letters</button>
+              <button type="button" class="pill-btn" id="split-25letters" onclick="setSplitting('25letters')"><span class="check-icon">✓</span>25 letters</button>
+              <button type="button" class="pill-btn" id="split-30letters" onclick="setSplitting('30letters')"><span class="check-icon">✓</span>30 letters</button>
+              <button type="button" class="pill-btn" id="split-none" onclick="setSplitting('none')"><span class="check-icon">✓</span>None</button>
+            </div>
+          </div>
+
+          <!-- Section 5: Subtitle position -->
+          <div class="editor-section">
+            <div class="editor-section-title">Subtitle position</div>
+            <div class="pill-group" style="margin-top: 8px;">
+              <button type="button" class="pill-btn" id="pos-top" onclick="setSubtitlePosition('top')"><span class="check-icon">✓</span>Top</button>
+              <button type="button" class="pill-btn" id="pos-center" onclick="setSubtitlePosition('center')"><span class="check-icon">✓</span>Middle</button>
+              <button type="button" class="pill-btn active" id="pos-bottom" onclick="setSubtitlePosition('bottom')"><span class="check-icon">✓</span>Bottom</button>
+            </div>
+          </div>
+
+          <!-- Section 6: Font settings -->
+          <div class="editor-section">
+            <div class="editor-section-title">Font settings</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+              <!-- Font name, weight, size box -->
+              <div class="setting-box-card">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;">
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-3); font-weight: 500;">Font name</label>
+                    <select id="ed-font-family" style="width: 100%; margin-top: 4px; padding: 6px; font-size: 12px;" onchange="setFontFamily(this.value)">
+                      <option value="Poppins">Poppins</option>
+                      <option value="Arial Bold">Arial Bold</option>
+                      <option value="Impact">Impact</option>
+                      <option value="Segoe UI Bold">Segoe UI Bold</option>
+                      <option value="Trebuchet MS Bold">Trebuchet MS Bold</option>
+                      <option value="Tahoma Bold">Tahoma Bold</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-3); font-weight: 500;">Font weight</label>
+                    <select id="ed-font-weight" style="width: 100%; margin-top: 4px; padding: 6px; font-size: 12px;" onchange="setFontWeight(this.value)">
+                      <option value="900">Black</option>
+                      <option value="700" selected>Bold</option>
+                      <option value="600">SemiBold</option>
+                      <option value="400">Regular</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-3); font-weight: 500;">Font size</label>
+                    <input type="number" id="ed-font-size-input" min="40" max="110" value="75" style="width: 100%; margin-top: 4px; padding: 6px 8px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);" oninput="setFontSize(this.value)" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Font color box -->
+              <div class="setting-box-card" style="padding: 10px 14px;">
+                <label style="font-size: 11px; color: var(--text-3); font-weight: 500;">Font color</label>
+                <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px;">
+                  <input type="color" id="ed-text-color-picker" class="color-circle-input" value="#FFFFFF" onchange="setTextColor(this.value)" />
+                  <span id="ed-text-color-hex" style="font-family: monospace; font-size: 13px; font-weight: 600; color: var(--text);">#FFFFFFFF</span>
+                </div>
+              </div>
+
+              <!-- Outline color and Stroke size box -->
+              <div class="setting-box-card" style="padding: 10px 14px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center;">
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-3); font-weight: 500;">Outline color</label>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                      <input type="color" id="ed-outline-color-picker" class="color-circle-input" value="#000000" onchange="setOutlineColor(this.value)" />
+                      <span id="ed-outline-color-hex" style="font-family: monospace; font-size: 13px; font-weight: 600; color: var(--text);">#000000FF</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; color: var(--text-3); font-weight: 500;">Stroke size</label>
+                    <input type="number" id="ed-outline-stroke-input" min="0" max="10" value="0" style="width: 100%; margin-top: 4px; padding: 6px 8px; font-size: 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);" oninput="setOutlineWidth(this.value)" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Tab: Warna -->
-          <div class="editor-panel" data-tab="color" hidden>
-            <div class="editor-section">
-              <div class="editor-section-title">Warna</div>
-              <p class="editor-hint">Sorotan = kata yang sedang di-highlight.</p>
-              <label style="font-size: 11px; color: var(--text-3);">Sorotan kata</label>
-              <div class="color-swatches" style="margin: 6px 0 14px;">
-                <button type="button" class="color-circle active" style="background: #FFE600;" onclick="setHighlightColor('#FFE600')"></button>
-                <button type="button" class="color-circle" style="background: #00FF88;" onclick="setHighlightColor('#00FF88')"></button>
-                <button type="button" class="color-circle" style="background: #00E5FF;" onclick="setHighlightColor('#00E5FF')"></button>
-                <button type="button" class="color-circle" style="background: #FF3366;" onclick="setHighlightColor('#FF3366')"></button>
-                <button type="button" class="color-circle" style="background: #F5C518;" onclick="setHighlightColor('#F5C518')"></button>
-                <button type="button" class="color-circle" style="background: #FFFFFF;" onclick="setHighlightColor('#FFFFFF')"></button>
-                <input type="color" id="ed-color-custom" class="color-picker-custom" value="#FFE600" onchange="setHighlightColor(this.value)" />
+          <!-- Section 7: Other settings -->
+          <div class="editor-section">
+            <div class="editor-section-title">Other settings</div>
+            <div class="setting-box-card" style="padding: 2px 14px; margin-top: 8px;">
+              <div class="toggle-row">
+                <span class="toggle-label"><span style="font-weight: 800; font-size: 13.5px; width: 22px;">Aa</span> Enable uppercase</span>
+                <label class="switch">
+                  <input type="checkbox" id="ed-toggle-uppercase" checked onchange="setAllCaps(this.checked)" />
+                  <span class="slider"></span>
+                </label>
               </div>
-              <label style="font-size: 11px; color: var(--text-3);">Warna teks</label>
-              <div class="color-swatches" style="margin-top: 6px;">
-                <input type="color" id="ed-text-color" class="color-picker-custom" value="#FFFFFF" onchange="setTextColor(this.value)" />
-                <span id="ed-text-color-hex" style="font-size: 12px; color: var(--text-2);">#FFFFFF</span>
+              <div class="toggle-row">
+                <span class="toggle-label"><span style="font-size: 14px; width: 22px;">🗋</span> Enable background box</span>
+                <label class="switch">
+                  <input type="checkbox" id="ed-toggle-box" onchange="setBox(this.checked)" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <span class="toggle-label"><span style="font-size: 14px; width: 22px;">👁️</span> Enable word reveal</span>
+                <label class="switch">
+                  <input type="checkbox" id="ed-toggle-word-reveal" onchange="setWordReveal(this.checked)" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <span class="toggle-label"><span style="font-size: 14px; width: 22px;">👤</span> Face motion tracking</span>
+                <label class="switch">
+                  <input type="checkbox" id="ed-facetrack" checked onchange="syncFaceTrackCheckbox(this.checked)" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="toggle-row">
+                <span class="toggle-label"><span style="font-size: 14px; width: 22px;">🔍</span> Dynamic zoom</span>
+                <label class="switch">
+                  <input type="checkbox" id="ed-zoom" checked />
+                  <span class="slider"></span>
+                </label>
               </div>
             </div>
           </div>
@@ -353,12 +407,27 @@
     const activelyRendering = new Set();
 
     const editorState = {
-      clipId: null, clipIdx: 1, hook: '', preset: 'hormozi', position: 'bottom',
-      highlightColor: '#FFE600', wordsPerPhrase: 2, fontName: 'Arial Bold',
-      fontSize: 76, allCaps: true, karaoke: true, faceTracking: true, dynamicZoom: true,
+      clipId: null, clipIdx: 1, hook: '',
+      subtitlesEnabled: true,
+      preset: 'they_are_spoken',
+      transition: 'word_bounce',
+      highlightType: 'background',
+      highlightColor: '#0169EE',
+      splitting: '20letters',
+      position: 'bottom',
+      fontName: 'Poppins',
+      fontWeight: '700',
+      fontSize: 75,
+      textColor: '#FFFFFF',
+      outlineColor: '#000000',
+      outlineW: 0,
+      allCaps: true,
+      boxBg: false,
+      wordReveal: false,
+      faceTracking: true,
+      dynamicZoom: true,
+      facetrackData: [], facetrackLoaded: false,
       words: [], wordsLoaded: false,
-      textColor: '#FFFFFF', outlineColor: '#000000', outlineW: 5,
-      boxBg: false, transition: 'none',
     };
 
     function showToast(message, type = 'normal') {
@@ -402,14 +471,20 @@
       editorState.clipId = clipId;
       editorState.clipIdx = idx;
       editorState.hook = hook || 'Momen terbaik';
-      editorState.words = [];        // real subtitle words for this clip
+      editorState.words = [];
       editorState.wordsLoaded = false;
+      editorState.faceTracking = true;
+      const ftBtn = document.getElementById('ed-facetrack-btn');
+      const ftChk = document.getElementById('ed-facetrack');
+      if (ftBtn) { ftBtn.textContent = '👤 Face Track: ON'; ftBtn.classList.add('active-toggle'); }
+      if (ftChk) { ftChk.checked = true; }
       document.getElementById('ed-title').textContent = 'Atur gaya klip #' + idx;
       document.getElementById('ed-subtitle').textContent = 'Skor ' + (score || 0) + '/100 · ' + (duration || 0) + ' detik';
-      setEditorTab('text');
+      syncUIFromState();
       updateLivePreview();
       loadEditorVideo(clipId);
       loadClipWords(clipId);
+      loadClipFaceTrack(clipId);
       document.getElementById('editor-modal').classList.add('open');
     }
 
@@ -433,11 +508,119 @@
       }
     }
 
+    let faceTrackRafId = null;
+    let currentPreviewX = 50.0; // Current camera horizontal position in % (0..100)
+
+    function startFaceTrackAnimation() {
+      if (faceTrackRafId) cancelAnimationFrame(faceTrackRafId);
+      function step() {
+        const v = document.getElementById('ed-video');
+        if (!v || v.paused || v.ended) {
+          faceTrackRafId = null;
+          return;
+        }
+        updateFaceTrackPreview(false); // 60fps continuous smooth lerp
+        faceTrackRafId = requestAnimationFrame(step);
+      }
+      faceTrackRafId = requestAnimationFrame(step);
+    }
+
+    function stopFaceTrackAnimation() {
+      if (faceTrackRafId) {
+        cancelAnimationFrame(faceTrackRafId);
+        faceTrackRafId = null;
+      }
+    }
+
+    async function loadClipFaceTrack(clipId) {
+      editorState.facetrackData = [];
+      editorState.facetrackLoaded = false;
+      try {
+        const res = await fetch('/api/clips/' + clipId + '/facetrack');
+        const data = await res.json();
+        editorState.facetrackData = data.keyframes || [];
+        editorState.facetrackLoaded = true;
+        updateFaceTrackPreview(true);
+      } catch (err) {
+        editorState.facetrackData = [];
+        editorState.facetrackLoaded = true;
+      }
+    }
+
+    function toggleFaceTracking() {
+      editorState.faceTracking = !editorState.faceTracking;
+      const btn = document.getElementById('ed-facetrack-btn');
+      const chk = document.getElementById('ed-facetrack');
+      if (btn) {
+        btn.textContent = editorState.faceTracking ? '👤 Face Track: ON' : '👤 Face Track: OFF';
+        btn.classList.toggle('active-toggle', editorState.faceTracking);
+      }
+      if (chk) {
+        chk.checked = editorState.faceTracking;
+      }
+      updateFaceTrackPreview(false);
+      showToast(editorState.faceTracking ? 'Face Tracking diaktifkan untuk preview & render.' : 'Face Tracking dimatikan (crop tengah statis).', 'normal');
+    }
+
+    function syncFaceTrackCheckbox(checked) {
+      editorState.faceTracking = checked;
+      const btn = document.getElementById('ed-facetrack-btn');
+      if (btn) {
+        btn.textContent = editorState.faceTracking ? '👤 Face Track: ON' : '👤 Face Track: OFF';
+        btn.classList.toggle('active-toggle', editorState.faceTracking);
+      }
+      updateFaceTrackPreview(false);
+    }
+
+    function updateFaceTrackPreview(immediate = false) {
+      const v = document.getElementById('ed-video');
+      if (!v) return;
+      if (!editorState.faceTracking || !editorState.facetrackData || !editorState.facetrackData.length) {
+        if (immediate) {
+          currentPreviewX = 50.0;
+        } else {
+          currentPreviewX += (50.0 - currentPreviewX) * 0.12;
+        }
+        v.style.objectPosition = currentPreviewX.toFixed(2) + '% center';
+        return;
+      }
+      const t = v.currentTime || 0;
+      const pts = editorState.facetrackData;
+      let targetRatio = 0.5;
+      if (t <= pts[0][0]) {
+        targetRatio = pts[0][1];
+      } else if (t >= pts[pts.length - 1][0]) {
+        targetRatio = pts[pts.length - 1][1];
+      } else {
+        for (let i = 0; i < pts.length - 1; i++) {
+          const t0 = pts[i][0], x0 = pts[i][1];
+          const t1 = pts[i + 1][0], x1 = pts[i + 1][1];
+          if (t >= t0 && t <= t1) {
+            const ratio = (t - t0) / Math.max(0.001, t1 - t0);
+            // S-curve cosine ease-in-out: eliminates jerky velocity jumps between keyframes
+            const smoothRatio = 0.5 * (1.0 - Math.cos(ratio * Math.PI));
+            targetRatio = x0 + (x1 - x0) * smoothRatio;
+            break;
+          }
+        }
+      }
+      const targetPct = Math.max(6, Math.min(94, targetRatio * 100));
+      if (immediate) {
+        currentPreviewX = targetPct;
+      } else {
+        // 60fps spring lerp: buttery smooth cinematic camera glide
+        currentPreviewX += (targetPct - currentPreviewX) * 0.14;
+      }
+      v.style.objectPosition = currentPreviewX.toFixed(2) + '% center';
+    }
+
     function loadEditorVideo(clipId) {
       const v = document.getElementById('ed-video');
       const status = document.getElementById('ed-video-status');
       const btn = document.getElementById('ed-play-btn');
       const snd = document.getElementById('ed-sound-btn');
+      stopFaceTrackAnimation();
+      currentPreviewX = 50.0;
       v.pause();
       v.removeAttribute('src');
       v.load();
@@ -453,9 +636,25 @@
         v.play().catch(() => {});
       };
       v.onerror = () => { status.textContent = 'Video sumber tidak tersedia'; };
-      // Re-render subtitle overlay as the video plays.
-      v.ontimeupdate = renderSubtitleOverlay;
-      v.onseeked = renderSubtitleOverlay;
+      v.onplay = () => {
+        startFaceTrackAnimation();
+        if (btn) btn.textContent = 'Jeda';
+      };
+      v.onpause = () => {
+        stopFaceTrackAnimation();
+        if (btn) btn.textContent = 'Putar video';
+      };
+      v.onended = () => {
+        stopFaceTrackAnimation();
+        if (btn) btn.textContent = 'Putar video';
+      };
+      v.ontimeupdate = () => {
+        renderSubtitleOverlay();
+      };
+      v.onseeked = () => {
+        renderSubtitleOverlay();
+        updateFaceTrackPreview(true);
+      };
     }
 
     function toggleEditorSound() {
@@ -467,61 +666,120 @@
       if (snd) snd.textContent = v.muted ? '🔇' : '🔊';
     }
 
-    // Group words into phrases (mirrors the renderer's words_per_phrase).
+    // Group words into phrases (mirrors the renderer's character length & word count splitting).
     function groupPhrases() {
-      const n = editorState.wordsPerPhrase || 3;
+      const sp = (editorState.splitting || '20letters').toLowerCase();
+      let maxChars = 20;
+      let maxWords = 8;
+      if (sp === 'oneword' || sp === '1word') { maxChars = 0; maxWords = 1; }
+      else if (sp === '10letters') { maxChars = 10; maxWords = 6; }
+      else if (sp === '15letters') { maxChars = 15; maxWords = 7; }
+      else if (sp === '20letters') { maxChars = 20; maxWords = 8; }
+      else if (sp === '25letters') { maxChars = 25; maxWords = 9; }
+      else if (sp === '30letters') { maxChars = 30; maxWords = 10; }
+      else if (sp === 'none') { maxChars = 48; maxWords = 12; }
+
       const groups = [];
       let cur = [];
+      let curLen = 0;
       for (const w of editorState.words) {
+        const txt = (w.text || '').trim();
         cur.push(w);
-        if (/[.!?:;]$/.test(w.text) || cur.length >= n) { groups.push(cur); cur = []; }
+        curLen += txt.length + 1;
+        const endsPunct = /[.!?:;]$/.test(txt);
+        if (endsPunct || cur.length >= maxWords || (maxChars > 0 && curLen >= maxChars)) {
+          groups.push(cur);
+          cur = [];
+          curLen = 0;
+        }
       }
       if (cur.length) groups.push(cur);
       return groups;
     }
+
+    let lastRenderedPhraseIndex = -1;
 
     function renderSubtitleOverlay() {
       const v = document.getElementById('ed-video');
       const el = document.getElementById('live-sub-text');
       const box = document.getElementById('live-sub-box');
       if (!el || !box) return;
-      box.className = 'sub-preview-box pos-' + editorState.position;
 
-      // Box background toggle.
+      if (!editorState.subtitlesEnabled) {
+        box.style.display = 'none';
+        return;
+      }
+      box.style.display = 'flex';
+      box.className = 'sub-preview-box pos-' + (editorState.position === 'middle' ? 'center' : editorState.position);
+
       const ow = editorState.outlineW || 0;
       const stroke = ow > 0
-        ? '-1px -1px 0 ' + editorState.outlineColor + ',' + '1px -1px 0 ' + editorState.outlineColor + ',' +
-          '-1px 1px 0 ' + editorState.outlineColor + ',' + '1px 1px 0 ' + editorState.outlineColor
+        ? `-1px -1px 0 ${editorState.outlineColor}, 1px -1px 0 ${editorState.outlineColor}, -1px 1px 0 ${editorState.outlineColor}, 1px 1px 0 ${editorState.outlineColor}`
         : 'none';
       el.style.textShadow = stroke;
-      el.style.background = editorState.boxBg ? 'rgba(0,0,0,0.6)' : 'transparent';
-      el.style.padding = editorState.boxBg ? '6px 12px' : '0';
+      el.style.background = editorState.boxBg ? 'rgba(0,0,0,0.65)' : 'transparent';
+      el.style.padding = editorState.boxBg ? '6px 14px' : '0';
+      el.style.borderRadius = editorState.boxBg ? '8px' : '0';
 
       if (!editorState.wordsLoaded) { el.textContent = ''; return; }
       if (!editorState.words.length) {
-        el.innerHTML = '<span style="opacity:.6">(tidak ada subtitle terdeteksi di klip ini)</span>';
+        el.innerHTML = '<span style="opacity:.6; font-size:12px;">(tidak ada subtitle terdeteksi di klip ini)</span>';
         return;
       }
 
       const t = v.currentTime || 0;
       const groups = groupPhrases();
-      let active = groups.find(g => t >= g[0].start && t <= g[g.length - 1].end);
-      if (!active) active = groups.find(g => g[0].start <= t) || groups[0];
+      const groupIdx = groups.findIndex(g => t >= g[0].start && t <= g[g.length - 1].end);
+      let active = (groupIdx !== -1) ? groups[groupIdx] : groups.find(g => g[0].start <= t) || groups[0];
+      const curGroupIdx = (groupIdx !== -1) ? groupIdx : 0;
 
-      // Active word = the one whose [start,end] contains t.
-      const parts = active.map(w => {
-        const hot = (t >= w.start && t < w.end);
-        const word = editorState.allCaps ? (w.text || '').toUpperCase() : (w.text || '');
-        if (!hot) {
-          return `<span style="color:${editorState.textColor}">${esc(word)}</span>`;
+      // Check phrase transition animation (Subtitle bounce or Subtitle slide)
+      if (curGroupIdx !== lastRenderedPhraseIndex) {
+        lastRenderedPhraseIndex = curGroupIdx;
+        if (editorState.transition === 'sub_bounce') {
+          el.classList.remove('anim-sub-bounce');
+          void el.offsetWidth;
+          el.classList.add('anim-sub-bounce');
+        } else if (editorState.transition === 'sub_slide') {
+          el.classList.remove('anim-sub-slide');
+          void el.offsetWidth;
+          el.classList.add('anim-sub-slide');
         }
-        // Base colour = text colour; highlight overlay per transition style.
-        let anim = '';
-        if (editorState.transition === 'bounce') anim = ';display:inline-block;transform:translateY(-6px) scale(1.15)';
-        else if (editorState.transition === 'slide') anim = ';display:inline-block;transform:translateY(-4px)';
-        return `<span class="hi-word" style="color:${editorState.highlightColor}${anim}">${esc(word)}</span>`;
+      }
+
+      const activeWordIdx = active.findIndex(w => t >= w.start && t < w.end);
+      const hlType = editorState.highlightType;
+      const tMode = editorState.transition;
+
+      const parts = active.map((w, idx) => {
+        const isCurrent = (idx === activeWordIdx);
+        const isPast = (activeWordIdx !== -1 && idx < activeWordIdx);
+        const isFuture = (activeWordIdx !== -1 && idx > activeWordIdx);
+
+        if (editorState.wordReveal && isFuture) {
+          return '';
+        }
+
+        const rawText = editorState.allCaps ? (w.text || '').toUpperCase() : (w.text || '');
+        let wordAnimClass = '';
+        if (isCurrent) {
+          if (tMode === 'word_bounce') wordAnimClass = 'anim-word-bounce';
+          else if (tMode === 'word_slide') wordAnimClass = 'anim-word-slide';
+        }
+
+        let style = `color: ${editorState.textColor};`;
+        if (hlType === 'background' && isCurrent) {
+          style = `background: ${editorState.highlightColor}; color: #ffffff; padding: 2px 7px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.35); font-weight: 800;`;
+        } else if (hlType === 'current' && isCurrent) {
+          style = `color: ${editorState.highlightColor}; font-weight: 800;`;
+        } else if (hlType === 'upto' && (isCurrent || isPast)) {
+          style = `color: ${editorState.highlightColor}; font-weight: 800;`;
+        }
+
+        return `<span class="sub-word ${wordAnimClass}" style="${style}">${esc(rawText)}</span>`;
       });
-      el.innerHTML = parts.join(' ');
+
+      el.innerHTML = parts.filter(Boolean).join(' ');
     }
 
     function toggleEditorVideo() {
@@ -532,6 +790,7 @@
     }
 
     function closeEditor() {
+      stopFaceTrackAnimation();
       const v = document.getElementById('ed-video');
       if (v) { v.pause(); }
       document.getElementById('editor-modal').classList.remove('open');
@@ -542,79 +801,179 @@
       const text = document.getElementById('live-sub-text');
       if (!text) return;
       text.style.fontFamily = `'${editorState.fontName}', sans-serif`;
+      text.style.fontWeight = editorState.fontWeight;
       text.style.fontSize = Math.max(14, Math.round(editorState.fontSize * 0.26)) + 'px';
-      const custom = document.getElementById('ed-color-custom');
-      if (custom) custom.value = editorState.highlightColor;
       renderSubtitleOverlay();
     }
 
-    function selectPreset(name) {
+    function select2ShortPreset(name) {
       editorState.preset = name;
-      document.querySelectorAll('.preset-tile').forEach(el => el.classList.remove('active'));
-      const tile = document.getElementById('tile-' + name.replace('_badge', ''));
-      if (tile) tile.classList.add('active');
-      if (name === 'hormozi') { Object.assign(editorState, {highlightColor:'#FFE600', wordsPerPhrase:2, position:'bottom', fontName:'Arial Bold', fontSize:78, allCaps:true}); }
-      else if (name === 'capcut') { Object.assign(editorState, {highlightColor:'#00FF88', wordsPerPhrase:3, position:'bottom', fontName:'Arial Bold', fontSize:74, allCaps:true}); }
-      else if (name === 'neon_badge') { Object.assign(editorState, {highlightColor:'#00E5FF', wordsPerPhrase:3, position:'bottom', fontName:'Segoe UI Bold', fontSize:74, allCaps:true}); }
-      else if (name === 'cinematic') { Object.assign(editorState, {highlightColor:'#F5C518', wordsPerPhrase:4, position:'center', fontName:'Trebuchet MS Bold', fontSize:70, allCaps:true}); }
-      else if (name === 'minimal') { Object.assign(editorState, {highlightColor:'#FFFFFF', wordsPerPhrase:4, position:'bottom', fontName:'Arial Bold', fontSize:72, allCaps:false}); }
-      setSubtitlePosition(editorState.position, false);
-      setWordsPerPhrase(editorState.wordsPerPhrase, false);
-      document.getElementById('ed-font-family').value = editorState.fontName;
-      document.getElementById('ed-font-size').value = editorState.fontSize;
-      document.getElementById('ed-font-size-val').textContent = editorState.fontSize + 'px';
-      document.getElementById('ed-all-caps').checked = editorState.allCaps;
+      document.querySelectorAll('.preset-card-2s').forEach(el => el.classList.remove('active'));
+      const card = document.getElementById('preset-' + name);
+      if (card) card.classList.add('active');
+
+      if (name === 'super_simple') {
+        Object.assign(editorState, {
+          fontName: 'Poppins', fontWeight: '800', fontSize: 75, textColor: '#FFFFFF', highlightColor: '#FFFFFF',
+          outlineW: 4, outlineColor: '#000000', highlightType: 'none', transition: 'none', boxBg: false, allCaps: true,
+        });
+      } else if (name === 'simple_boxy') {
+        Object.assign(editorState, {
+          fontName: 'Poppins', fontWeight: '800', fontSize: 75, textColor: '#FFFFFF', highlightColor: '#0169EE',
+          outlineW: 0, outlineColor: '#000000', highlightType: 'background', transition: 'word_bounce', boxBg: false, allCaps: true,
+        });
+      } else if (name === 'subtitles') {
+        Object.assign(editorState, {
+          fontName: 'Poppins', fontWeight: '900', fontSize: 75, textColor: '#FFFFFF', highlightColor: '#00E5FF',
+          outlineW: 4, outlineColor: '#000000', highlightType: 'current', transition: 'word_bounce', boxBg: false, allCaps: true,
+        });
+      } else if (name === 'spoken') {
+        Object.assign(editorState, {
+          fontName: 'Poppins', fontWeight: '900', fontSize: 75, textColor: '#FFFFFF', highlightColor: '#00FF88',
+          outlineW: 4, outlineColor: '#000000', highlightType: 'current', transition: 'word_bounce', boxBg: false, allCaps: true,
+        });
+      } else if (name === 'they_are_spoken') {
+        Object.assign(editorState, {
+          fontName: 'Poppins', fontWeight: '800', fontSize: 75, textColor: '#FFFFFF', highlightColor: '#0169EE',
+          outlineW: 0, outlineColor: '#000000', highlightType: 'background', transition: 'word_bounce', boxBg: false, allCaps: true,
+        });
+      } else if (name === 'hormozi') {
+        Object.assign(editorState, {
+          fontName: 'Arial Bold', fontWeight: '900', fontSize: 78, textColor: '#FFFFFF', highlightColor: '#FFE600',
+          outlineW: 5, outlineColor: '#000000', highlightType: 'current', transition: 'word_bounce', boxBg: false, allCaps: true,
+        });
+      }
+
+      syncUIFromState();
       updateLivePreview();
     }
 
-    function setSubtitlePosition(pos, update = true) {
-      editorState.position = pos;
-      ['bottom', 'center', 'top'].forEach(p => {
-        const btn = document.getElementById('pos-btn-' + p);
-        if (btn) btn.classList.toggle('active', p === pos);
+    function toggleSubtitlesEnabled(enabled) {
+      editorState.subtitlesEnabled = enabled;
+      renderSubtitleOverlay();
+    }
+
+    function setSubtitleTransition(t) {
+      editorState.transition = t;
+      ['none', 'sub_bounce', 'sub_slide', 'word_bounce', 'word_slide'].forEach(k => {
+        const b = document.getElementById('tran-' + k.replace('_', '-'));
+        if (b) b.classList.toggle('active', k === t);
       });
-      if (update) updateLivePreview();
+      renderSubtitleOverlay();
+    }
+
+    function setHighlightType(h) {
+      editorState.highlightType = h;
+      ['none', 'current', 'upto', 'background'].forEach(k => {
+        const b = document.getElementById('hl-' + k);
+        if (b) b.classList.toggle('active', k === h);
+      });
+      renderSubtitleOverlay();
     }
 
     function setHighlightColor(color) {
       editorState.highlightColor = color;
-      document.querySelectorAll('.color-circle').forEach(btn => {
-        if (btn.style.backgroundColor && (btn.style.backgroundColor.toLowerCase() === color.toLowerCase() || rgbToHex(btn.style.backgroundColor) === color.toLowerCase())) btn.classList.add('active');
-        else btn.classList.remove('active');
-      });
-      updateLivePreview();
+      const chip = document.getElementById('ed-color-chip');
+      const chipHex = document.getElementById('ed-color-chip-hex');
+      if (chip) chip.value = color;
+      if (chipHex) chipHex.textContent = (color + 'FF').toUpperCase();
+      renderSubtitleOverlay();
     }
 
-    function rgbToHex(col) {
-      if (col.charAt(0) === '#') return col.toLowerCase();
-      const rgb = col.match(/\d+/g);
-      if (!rgb || rgb.length < 3) return col;
-      return '#' + ((1 << 24) + (parseInt(rgb[0]) << 16) + (parseInt(rgb[1]) << 8) + parseInt(rgb[2])).toString(16).slice(1);
+    function setSplitting(s) {
+      editorState.splitting = s;
+      ['oneword', '10letters', '15letters', '20letters', '25letters', '30letters', 'none'].forEach(k => {
+        const b = document.getElementById('split-' + k);
+        if (b) b.classList.toggle('active', k === s);
+      });
+      renderSubtitleOverlay();
     }
 
-    function setWordsPerPhrase(n, update = true) {
-      editorState.wordsPerPhrase = n;
-      [1, 2, 4].forEach(val => {
-        const btn = document.getElementById('split-btn-' + val);
-        if (btn) btn.classList.toggle('active', val === n || (val === 2 && (n === 2 || n === 3)));
+    function setSubtitlePosition(pos) {
+      editorState.position = pos;
+      ['top', 'center', 'bottom'].forEach(p => {
+        const btn = document.getElementById('pos-' + p);
+        if (btn) btn.classList.toggle('active', p === pos);
       });
-      if (update) updateLivePreview();
+      renderSubtitleOverlay();
     }
+
     function setFontFamily(fn) { editorState.fontName = fn; updateLivePreview(); }
-    function setFontSize(sz) { editorState.fontSize = parseInt(sz); document.getElementById('ed-font-size-val').textContent = sz + 'px'; updateLivePreview(); }
-    function setAllCaps(b) { editorState.allCaps = b; updateLivePreview(); }
-    function setKaraoke(b) { editorState.karaoke = b; }
-    function setTextColor(c) { editorState.textColor = c; document.getElementById('ed-text-color-hex').textContent = c.toUpperCase(); updateLivePreview(); }
-    function setOutlineWidth(v) { editorState.outlineW = parseInt(v); document.getElementById('ed-outline-w-val').textContent = v + 'px'; updateLivePreview(); }
-    function setOutlineColor(c) { editorState.outlineColor = c; document.getElementById('ed-outline-color-hex').textContent = c.toUpperCase(); updateLivePreview(); }
-    function setBox(b) { editorState.boxBg = b; updateLivePreview(); }
-    function setTransition(t) {
-      editorState.transition = t;
-      ['None', 'word-bounce', 'slide-up'].forEach(k => {
-        const b = document.getElementById('tran-btn-' + k);
-        if (b) b.classList.toggle('active', k === ({none:'None',bounce:'word-bounce',slide:'slide-up'}[t] || 'None'));
-      });
+    function setFontWeight(fw) { editorState.fontWeight = fw; updateLivePreview(); }
+    function setFontSize(sz) { editorState.fontSize = parseInt(sz) || 75; updateLivePreview(); }
+    function setTextColor(c) {
+      editorState.textColor = c;
+      const hex = document.getElementById('ed-text-color-hex');
+      if (hex) hex.textContent = (c + 'FF').toUpperCase();
       updateLivePreview();
+    }
+    function setOutlineColor(c) {
+      editorState.outlineColor = c;
+      const hex = document.getElementById('ed-outline-color-hex');
+      if (hex) hex.textContent = (c + 'FF').toUpperCase();
+      updateLivePreview();
+    }
+    function setOutlineWidth(v) { editorState.outlineW = parseInt(v) || 0; updateLivePreview(); }
+    function setAllCaps(b) { editorState.allCaps = b; updateLivePreview(); }
+    function setBox(b) { editorState.boxBg = b; updateLivePreview(); }
+    function setWordReveal(b) { editorState.wordReveal = b; updateLivePreview(); }
+
+    function syncUIFromState() {
+      const subToggle = document.getElementById('ed-subtitles-enabled');
+      if (subToggle) subToggle.checked = editorState.subtitlesEnabled;
+
+      ['none', 'sub_bounce', 'sub_slide', 'word_bounce', 'word_slide'].forEach(t => {
+        const btn = document.getElementById('tran-' + t.replace('_', '-'));
+        if (btn) btn.classList.toggle('active', editorState.transition === t);
+      });
+
+      ['none', 'current', 'upto', 'background'].forEach(h => {
+        const btn = document.getElementById('hl-' + h);
+        if (btn) btn.classList.toggle('active', editorState.highlightType === h);
+      });
+
+      const chip = document.getElementById('ed-color-chip');
+      const chipHex = document.getElementById('ed-color-chip-hex');
+      if (chip) chip.value = editorState.highlightColor;
+      if (chipHex) chipHex.textContent = (editorState.highlightColor + 'FF').toUpperCase();
+
+      ['oneword', '10letters', '15letters', '20letters', '25letters', '30letters', 'none'].forEach(s => {
+        const btn = document.getElementById('split-' + s);
+        if (btn) btn.classList.toggle('active', editorState.splitting === s);
+      });
+
+      ['top', 'center', 'bottom'].forEach(p => {
+        const btn = document.getElementById('pos-' + p);
+        if (btn) btn.classList.toggle('active', editorState.position === p);
+      });
+
+      const fn = document.getElementById('ed-font-family');
+      if (fn) fn.value = editorState.fontName;
+      const fw = document.getElementById('ed-font-weight');
+      if (fw) fw.value = editorState.fontWeight;
+      const fs = document.getElementById('ed-font-size-input');
+      if (fs) fs.value = editorState.fontSize;
+
+      const fc = document.getElementById('ed-text-color-picker');
+      const fcHex = document.getElementById('ed-text-color-hex');
+      if (fc) fc.value = editorState.textColor;
+      if (fcHex) fcHex.textContent = (editorState.textColor + 'FF').toUpperCase();
+
+      const oc = document.getElementById('ed-outline-color-picker');
+      const ocHex = document.getElementById('ed-outline-color-hex');
+      if (oc) oc.value = editorState.outlineColor;
+      if (ocHex) ocHex.textContent = (editorState.outlineColor + 'FF').toUpperCase();
+      const ow = document.getElementById('ed-outline-stroke-input');
+      if (ow) ow.value = editorState.outlineW;
+
+      const chkCaps = document.getElementById('ed-toggle-uppercase');
+      if (chkCaps) chkCaps.checked = editorState.allCaps;
+      const chkBox = document.getElementById('ed-toggle-box');
+      if (chkBox) chkBox.checked = editorState.boxBg;
+      const chkReveal = document.getElementById('ed-toggle-word-reveal');
+      if (chkReveal) chkReveal.checked = editorState.wordReveal;
+      const chkFace = document.getElementById('ed-facetrack');
+      if (chkFace) chkFace.checked = editorState.faceTracking;
     }
 
     async function submitCustomRender() {
@@ -625,27 +984,35 @@
           preset_id: editorState.preset,
           position: editorState.position,
           subtitle: {
-            font_name: editorState.fontName, font_size: editorState.fontSize,
+            subtitles_enabled: Boolean(editorState.subtitlesEnabled),
+            font_name: editorState.fontName,
+            font_size: editorState.fontSize,
             font_color: editorState.textColor,
-            highlight_color: editorState.highlightColor, words_per_phrase: editorState.wordsPerPhrase,
-            outline_color: editorState.outlineColor, outline_w: editorState.outlineW,
-            text_transform: editorState.allCaps ? 'upper' : 'none',
-            mode: editorState.karaoke ? 'karaoke' : 'line',
+            highlight_color: editorState.highlightColor,
+            highlight_type: editorState.highlightType,
             transition: editorState.transition,
-            box: editorState.boxBg,
+            splitting: editorState.splitting,
+            word_reveal: Boolean(editorState.wordReveal),
+            outline_color: editorState.outlineColor,
+            outline_w: editorState.outlineW,
+            text_transform: editorState.allCaps ? 'upper' : 'none',
+            box: Boolean(editorState.boxBg),
+            mode: 'karaoke',
           },
           video: {
-            face_tracking: document.getElementById('ed-facetrack').checked,
-            dynamic_zoom: document.getElementById('ed-zoom').checked,
+            face_tracking: Boolean(editorState.faceTracking),
+            dynamic_zoom: Boolean(document.getElementById('ed-zoom') && document.getElementById('ed-zoom').checked),
           }
         }
       };
       activelyRendering.add(clipId);
       closeEditor();
-      showToast('Klip #' + editorState.clipIdx + ' sedang dirender.', 'normal');
+      showToast('Klip #' + editorState.clipIdx + ' sedang dirender dengan gaya 2short.ai.', 'normal');
       try {
         const res = await fetch('/api/clips/' + clipId + '/render', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
         if (data.ok) { isFinished = false; ensurePolling(); refresh(); }
