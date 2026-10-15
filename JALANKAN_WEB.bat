@@ -58,8 +58,8 @@ echo   Tekan Ctrl+C untuk menghentikan server.
 echo ============================================================
 echo.
 
-REM Buka browser otomatis setelah server siap (2 detik)
-start "" powershell -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process 'http://127.0.0.1:%PORT%'"
+REM Buka browser otomatis di background tanpa memunculkan jendela powershell baru (2 detik)
+start "" /B powershell -WindowStyle Hidden -NoProfile -Command "Start-Sleep -Seconds 2; Start-Process 'http://127.0.0.1:%PORT%'"
 
 REM Jalankan FastAPI Uvicorn Server
 ".venv\Scripts\python.exe" -m uvicorn app.web:app --host 127.0.0.1 --port %PORT% --reload
