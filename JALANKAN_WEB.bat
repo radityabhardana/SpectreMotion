@@ -1,4 +1,4 @@
- @echo off
+@echo off
 REM ============================================================
 REM  SpectreMotion - Jalankan Web Dashboard (Klik 2x file ini)
 REM  Otomatis menjalankan web server + worker + membuka browser.

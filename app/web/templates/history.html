@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Riwayat — SpectreMotion</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
   <header class="topbar">
@@ -30,22 +31,37 @@
       <a href="/" class="btn btn-sm">Video baru</a>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
-      <div class="card" style="padding: 14px 18px;">
-        <span style="font-size: 12px; color: var(--text-3);">Total sesi</span>
-        <div style="font-size: 24px; font-weight: 600; margin-top: 2px;" id="stat-total-sessions">{{ sessions|length }}</div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+      <div class="card stat-tile reveal" style="--reveal-delay:40ms">
+        <div>
+          <span class="stat-label">Total Sesi</span>
+          <div class="stat-value" id="stat-total-sessions">{{ sessions|length }}</div>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/></svg>
+        </div>
       </div>
-      <div class="card" style="padding: 14px 18px;">
-        <span style="font-size: 12px; color: var(--text-3);">Momen tersimpan</span>
-        <div style="font-size: 24px; font-weight: 600; margin-top: 2px;" id="stat-total-clips">{{ sessions | sum(attribute='total_clips') }}</div>
+      <div class="card stat-tile reveal" style="--reveal-delay:100ms">
+        <div>
+          <span class="stat-label">Momen Tersimpan</span>
+          <div class="stat-value" id="stat-total-clips">{{ sessions | sum(attribute='total_clips') }}</div>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 4v16M17 4v16M2 9h5M2 15h5M17 9h5M17 15h5"/></svg>
+        </div>
       </div>
-      <div class="card" style="padding: 14px 18px;">
-        <span style="font-size: 12px; color: var(--text-3);">Klip selesai</span>
-        <div style="font-size: 24px; font-weight: 600; margin-top: 2px;" id="stat-rendered-clips">{{ sessions | sum(attribute='rendered_clips') }}</div>
+      <div class="card stat-tile reveal" style="--reveal-delay:160ms">
+        <div>
+          <span class="stat-label">Klip Selesai</span>
+          <div class="stat-value" id="stat-rendered-clips" style="color: var(--ok);">{{ sessions | sum(attribute='rendered_clips') }}</div>
+        </div>
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 4 14 11 14 10 22 19 10 12 10 13 2"/></svg>
+        </div>
       </div>
     </div>
 
-    <section class="card">
+    <section class="card reveal" style="--reveal-delay:200ms">
       <div class="card-header" style="flex-wrap: wrap; gap: 12px;">
         <div>
           <h2>Sesi tersimpan</h2>
@@ -277,6 +293,13 @@
       }
       updateToolbar();
     }
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('in'); io.unobserve(entry.target); }
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
   </script>
 </body>
 </html>

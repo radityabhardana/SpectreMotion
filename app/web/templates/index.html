@@ -3,8 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SpectreMotion</title>
+  <title>SpectreMotion — AI Shorts Generator</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body>
   <header class="topbar">
@@ -22,52 +23,105 @@
   </header>
 
   <main>
-    <div class="page-head">
-      <h1 class="page-title">Ubah video panjang jadi klip pendek</h1>
-      <p class="page-desc">Tempel link atau unggah video. Sistem transkripsi, memilih momen, dan memotongnya jadi klip vertikal 9:16 dengan subtitle.</p>
+    <div class="hero-section">
+      <div class="hero-badge reveal">
+        <span class="badge-dot"></span>
+        <span>AI Viral Shorts Studio</span>
+      </div>
+      <h1 class="hero-title reveal" style="--reveal-delay:60ms">
+        Ubah Video Panjang Jadi <span class="gradient-text">Klip Pendek Viral</span>
+      </h1>
+      <p class="hero-subtitle reveal" style="--reveal-delay:120ms">
+        Transkripsi Whisper presisi, kurasi momen otomatis, face tracking, dan subtitle animasi dinamis. Siap publish ke TikTok, Reels, dan YouTube Shorts.
+      </p>
     </div>
 
-    <section class="card">
-      <form id="job-form" enctype="multipart/form-data">
-        <div class="tabs">
-          <button type="button" class="tab-btn active" id="tab-url" onclick="setTab('url')">Link video</button>
-          <button type="button" class="tab-btn" id="tab-file" onclick="setTab('file')">Unggah file</button>
-        </div>
-
-        <input type="hidden" name="source_type" id="source_type" value="url" />
-
-        <div id="url-pane">
-          <div class="input-bar-group">
-            <input
-              type="url"
-              id="url-input"
-              name="url"
-              class="input-bar-field"
-              placeholder="https://www.youtube.com/watch?v=..."
-              required
-            />
-            <button type="submit" class="btn" id="btn-submit">Proses</button>
+    <div class="generator-card-wrap reveal" style="--reveal-delay:180ms">
+      <div class="generator-glow"></div>
+      <section class="card" style="z-index: 1;">
+        <form id="job-form" enctype="multipart/form-data">
+          <div class="tabs">
+            <button type="button" class="tab-btn active" id="tab-url" onclick="setTab('url')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              URL YouTube / Video
+            </button>
+            <button type="button" class="tab-btn" id="tab-file" onclick="setTab('file')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Unggah File Lokal
+            </button>
           </div>
-        </div>
 
-        <div id="file-pane" style="display:none">
-          <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
-            <div class="dropzone-title" id="dropzone-label">Pilih file atau seret ke sini</div>
-            <div class="dropzone-sub">MP4, MOV, MKV, WEBM (maks 2GB)</div>
-            <input type="file" id="file-input" name="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" onchange="fileSelected(this)" />
+          <input type="hidden" name="source_type" id="source_type" value="url" />
+
+          <div id="url-pane">
+            <div class="input-bar-group">
+              <input
+                type="url"
+                id="url-input"
+                name="url"
+                class="input-bar-field"
+                placeholder="https://www.youtube.com/watch?v=..."
+                required
+              />
+              <button type="submit" class="btn" id="btn-submit">
+                <span>Proses Video</span>
+                <span style="font-size: 15px;">→</span>
+              </button>
+            </div>
           </div>
-          <div style="text-align: right; margin-top: 14px;">
-            <button type="submit" class="btn" id="btn-submit-file">Proses</button>
+
+          <div id="file-pane" style="display:none">
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()" tabindex="0">
+              <div class="drop-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div class="dropzone-title" id="dropzone-label">Pilih file video atau seret ke sini</div>
+              <div class="dropzone-sub">Mendukung format MP4, MOV, MKV, WEBM (maks 2GB)</div>
+              <input type="file" id="file-input" name="file" accept="video/mp4,video/quicktime,video/x-matroska,video/webm" onchange="fileSelected(this)" />
+            </div>
+            <div style="text-align: right; margin-top: 14px;">
+              <button type="submit" class="btn" id="btn-submit-file">
+                <span>Proses Video</span>
+                <span style="font-size: 15px;">→</span>
+              </button>
+            </div>
           </div>
+
+          <input type="hidden" name="preset_id" value="default" />
+          <input type="hidden" name="auto_render" value="false" />
+          <input type="hidden" name="campaign_id" value="none" />
+
+          <div id="form-msg" style="margin-top: 12px; font-size: 13px; text-align: center; color: var(--text-2); min-height: 20px;"></div>
+        </form>
+      </section>
+    </div>
+
+    <!-- Capabilities Bento Strip -->
+    <div class="bento-strip">
+      <div class="bento-card reveal" style="--reveal-delay:60ms">
+        <div class="bento-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>
         </div>
+        <h3 class="bento-title">Deteksi Hook AI</h3>
+        <p class="bento-desc">Menganalisis alur naskah audio untuk menemukan momen 15–60 detik dengan retensi dan skor viralitas tertinggi.</p>
+      </div>
 
-        <input type="hidden" name="preset_id" value="default" />
-        <input type="hidden" name="auto_render" value="false" />
-        <input type="hidden" name="campaign_id" value="none" />
+      <div class="bento-card reveal" style="--reveal-delay:140ms">
+        <div class="bento-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V5a1 1 0 0 1 1-1h2"/><path d="M20 7V5a1 1 0 0 0-1-1h-2"/><path d="M4 17v2a1 1 0 0 0 1 1h2"/><path d="M20 17v2a1 1 0 0 1-1 1h-2"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <h3 class="bento-title">Face Motion Tracking</h3>
+        <p class="bento-desc">Kamera 9:16 otomatis mengikuti wajah pembicara secara halus dengan S-curve easing, mencegah pembicara terpotong layar.</p>
+      </div>
 
-        <div id="form-msg" style="margin-top: 12px; font-size: 13px; text-align: center; color: var(--text-2);"></div>
-      </form>
-    </section>
+      <div class="bento-card reveal" style="--reveal-delay:220ms">
+        <div class="bento-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+        </div>
+        <h3 class="bento-title">Subtitle 2short &amp; Drag</h3>
+        <p class="bento-desc">Preset karaoke word-bounce, font Google Fonts real-time, dan geser posisi teks langsung di kanvas preview.</p>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -106,6 +160,12 @@
           fileSelected(fi);
         }
       });
+      dropzone.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Enter' || evt.key === ' ') {
+          evt.preventDefault();
+          document.getElementById('file-input').click();
+        }
+      });
     }
 
     const form = document.getElementById('job-form');
@@ -115,7 +175,7 @@
       const btn = document.getElementById('btn-submit');
       const btnFile = document.getElementById('btn-submit-file');
       msg.style.color = 'var(--text-2)';
-      msg.textContent = 'Memproses...';
+      msg.textContent = 'Memproses video...';
       if (btn) btn.disabled = true;
       if (btnFile) btnFile.disabled = true;
       const fd = new FormData(form);
@@ -123,8 +183,8 @@
         const res = await fetch('/api/jobs', { method: 'POST', body: fd });
         const data = await res.json();
         if (!res.ok) throw new Error(data.detail || 'Gagal membuat job');
-        msg.style.color = 'var(--ok)';
-        msg.textContent = 'Job dibuat. Membuka katalog...';
+        msg.style.color = 'var(--accent)';
+        msg.textContent = 'Job dibuat. Membuka studio klip...';
         setTimeout(() => location.href = '/jobs/' + data.job_id, 400);
       } catch (err) {
         msg.style.color = 'var(--danger)';
@@ -133,6 +193,13 @@
         if (btnFile) btnFile.disabled = false;
       }
     });
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('in'); io.unobserve(entry.target); }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
   </script>
 </body>
 </html>

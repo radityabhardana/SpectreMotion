@@ -5,22 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Masuk — SpectreMotion</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <script>document.documentElement.classList.add('js');</script>
 </head>
 <body class="auth">
-  <div class="auth-box">
-    <div class="brand">
-      <div class="brand-mark">
+  <div class="auth-box reveal">
+    <div class="brand" style="justify-content: center; margin-bottom: 20px;">
+      <div class="brand-mark" style="width: 38px; height: 38px;">
         <svg viewBox="0 0 24 24"><path d="M4 4.5l10 7.5-10 7.5V4.5zm8 0l10 7.5-10 7.5V4.5z"/></svg>
       </div>
-      <h1>SpectreMotion</h1>
+      <h1 style="font-size: 18px;">SpectreMotion</h1>
     </div>
-    <p class="muted" style="margin: 0 0 8px; font-size: 13px;">Masuk untuk melanjutkan.</p>
+
+    <div style="text-align: center; margin-bottom: 18px;">
+      <h2 style="font-size: 16px; font-weight: 700; margin: 0 0 4px; color: var(--text);">Studio Login</h2>
+      <p class="muted" style="margin: 0; font-size: 13px;">Masuk untuk mengelola dan merender klip video.</p>
+    </div>
 
     {% if error %}
-    <p id="red" style="margin: 8px 0;">{{ error }}</p>
+    <div style="background: var(--danger-soft); border: 1px solid rgba(248, 113, 113, 0.3); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 14px;">
+      <p id="red" style="margin: 0; font-size: 12.5px; color: var(--danger); text-align: center;">{{ error }}</p>
+    </div>
     {% endif %}
 
-    <form method="post" action="/login" style="display: flex; flex-direction: column; gap: 12px;">
+    <form method="post" action="/login" style="display: flex; flex-direction: column; gap: 14px;">
       <div class="field" style="margin: 0;">
         <label for="username">Username</label>
         <input type="text" id="username" name="username" placeholder="admin" autofocus autocomplete="username" />
@@ -29,8 +36,20 @@
         <label for="password">Password</label>
         <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" />
       </div>
-      <button type="submit" class="btn" style="margin-top: 6px;">Masuk</button>
+      <button type="submit" class="btn" style="margin-top: 8px; width: 100%;">
+        <span>Masuk</span>
+        <span style="font-size: 15px;">→</span>
+      </button>
     </form>
   </div>
+
+  <script>
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { entry.target.classList.add('in'); io.unobserve(entry.target); }
+      });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+  </script>
 </body>
 </html>
