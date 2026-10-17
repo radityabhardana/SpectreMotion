@@ -192,10 +192,12 @@ a { color: inherit; }
 
 /* ---------- Layout ---------- */
 main {
+  width: 100%;
   max-width: 1040px;
   margin: 0 auto;
   padding: 36px 24px 84px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
 }
 
@@ -625,14 +627,23 @@ tbody tr:last-child td { border-bottom: none; }
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+  min-width: 0;
   box-shadow: var(--shadow-sm);
   transition: border-color 0.2s var(--ease), transform 0.2s var(--ease), background 0.2s var(--ease);
 }
 .history-item:hover { border-color: var(--border-strong); transform: translateX(2px); }
 .history-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1; }
-.history-title { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 10px; }
+.history-title { font-weight: 600; font-size: 14px; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.history-title > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
+}
+.history-title .pill { flex-shrink: 0; }
 .history-meta { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--text-2); flex-wrap: wrap; }
-.history-clips-badge { font-size: 12px; color: var(--text-2); border: 1px solid var(--border); padding: 3px 10px; border-radius: var(--pill); }
+.history-clips-badge { font-size: 12px; color: var(--text-2); border: 1px solid var(--border); padding: 3px 10px; border-radius: var(--pill); flex-shrink: 0; }
 .history-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .history-item.selected { border-color: var(--accent-border); background: var(--accent-soft); }
 
