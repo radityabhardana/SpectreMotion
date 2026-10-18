@@ -5,7 +5,9 @@ Aplikasi otomatisasi untuk memotong video horizontal panjang menjadi klip vertik
 <!-- [TEMPAT GAMBAR: BANNER / HERO PREVIEW] -->
 <!-- Panduan: Letakkan tangkapan layar antarmuka utama di: docs/assets/hero-preview.png -->
 <!-- Contoh: Tampilan web saat pengguna memasukkan link video YouTube atau preview hasil render -->
-![SpectreMotion Preview](docs/assets/hero-preview.png)
+![SpectreMotion Preview]
+<img width="1535" height="897" alt="image" src="https://github.com/user-attachments/assets/7f33b9ab-dddf-404a-9716-97a865fb7aea" />
+
 
 ---
 
