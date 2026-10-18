@@ -128,7 +128,7 @@ Buka peramban di: `http://127.0.0.1:8080`
 
 <!-- [TEMPAT GAMBAR: WEB GENERATOR] -->
 <!-- Panduan: Letakkan tangkapan layar form input video / halaman depan di: docs/assets/generator-page.png -->
-![Halaman Generator](docs/assets/generator-page.png)
+<img width="1535" height="894" alt="image" src="https://github.com/user-attachments/assets/ef2de5c0-37bd-459c-b9ae-b691c0c28b0d" />
 
 ### Menjalankan Bot Telegram
 
@@ -159,7 +159,9 @@ Ketika video selesai dianalisis, katalog klip akan menampilkan daftar potongan v
 
 <!-- [TEMPAT GAMBAR: EDITOR MODAL & PHONE PREVIEW] -->
 <!-- Panduan: Letakkan tangkapan layar modal editor klip (frame HP dengan teks hook dan subtitle) di: docs/assets/editor-preview.png -->
-![Editor Klip](docs/assets/editor-preview.png)
+<img width="1534" height="896" alt="image" src="https://github.com/user-attachments/assets/ab9f28d9-ec07-4d0a-8ec8-f8d6ef4394be" />
+<img width="1535" height="885" alt="image" src="https://github.com/user-attachments/assets/f770820e-2aba-488e-a2b2-f32043403a32" />
+
 
 1. **Kanvas HP Real-Time**: Memutar video klip 480p instan tanpa proses render ulang.
 2. **Pratinjau Hook**: Menampilkan banner judul pancingan di bagian atas frame (otomatis tampil pada 0s-3s pemutaran). Anda dapat mengedit teks hook langsung dari form editor.
