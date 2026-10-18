@@ -160,6 +160,7 @@ Ketika video selesai dianalisis, katalog klip akan menampilkan daftar potongan v
 <!-- [TEMPAT GAMBAR: EDITOR MODAL & PHONE PREVIEW] -->
 <!-- Panduan: Letakkan tangkapan layar modal editor klip (frame HP dengan teks hook dan subtitle) di: docs/assets/editor-preview.png -->
 <img width="1534" height="896" alt="image" src="https://github.com/user-attachments/assets/ab9f28d9-ec07-4d0a-8ec8-f8d6ef4394be" />
+
 <img width="1535" height="885" alt="image" src="https://github.com/user-attachments/assets/f770820e-2aba-488e-a2b2-f32043403a32" />
 
 
@@ -178,7 +179,8 @@ Menu **Hook Studio** di navigasi atas digunakan untuk mengatur template global t
 
 <!-- [TEMPAT GAMBAR: HOOK STUDIO] -->
 <!-- Panduan: Letakkan tangkapan layar halaman Hook Studio di: docs/assets/hook-studio.png -->
-![Hook Studio](docs/assets/hook-studio.png)
+<img width="1535" height="899" alt="image" src="https://github.com/user-attachments/assets/88c640fd-a17b-4eef-ae56-dd9bf095f474" />
+
 
 - Mengatur ukuran font, radius sudut bubble, dan ketebalan outline teks.
 - Mengatur warna teks utama dan warna highlight (kata yang diapit tanda bintang `*kata*`).
