@@ -405,8 +405,28 @@ def delete_clips_batch(clip_ids: list[str]) -> dict:
     }
 
 
+def purge_dead_sessions() -> int:
+    """Permanently delete jobs with status 'failed' or 'canceled' along with their files."""
+    with _connect() as conn:
+        rows = conn.execute(
+            "SELECT id FROM jobs WHERE status IN (?, ?)",
+            (JOB_CANCELED, JOB_FAILED),
+        ).fetchall()
+    count = 0
+    for r in rows:
+        try:
+            delete_job_and_assets(r["id"])
+            count += 1
+        except Exception:
+            pass
+    return count
+
+
 def list_sessions_with_stats(limit: int = 100) -> list[dict]:
-    """List original video sessions with total clips and rendered clips counts."""
+    """List original video sessions with total clips and rendered clips counts.
+    Canceled and failed sessions are permanently purged and never included.
+    """
+    purge_dead_sessions()
     with _connect() as conn:
         rows = conn.execute(
             """SELECT j.*,
@@ -415,6 +435,7 @@ def list_sessions_with_stats(limit: int = 100) -> list[dict]:
                FROM jobs j
                LEFT JOIN clips c ON c.job_id = j.id
                WHERE j.source_type != 'clip_render'
+                 AND j.status NOT IN ('canceled', 'failed')
                GROUP BY j.id
                ORDER BY j.created_at DESC LIMIT ?""",
             (limit,)

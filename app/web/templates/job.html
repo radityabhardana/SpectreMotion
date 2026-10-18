@@ -2143,15 +2143,23 @@
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closePlayer(); closeEditor(); } });
 
     async function cancelJob() {
-      if (!confirm('Batalkan pemrosesan video ini?')) return;
+      if (!confirm('Batalkan dan hapus pemrosesan video ini?')) return;
       const btn = document.getElementById('btn-cancel');
       if (btn) { btn.disabled = true; btn.textContent = 'Membatalkan...'; }
       try {
         const res = await fetch('/api/jobs/' + jobId + '/cancel', { method: 'POST' });
         const data = await res.json();
         if (!res.ok || !data.ok) throw new Error(data.error || data.detail || 'Gagal membatalkan');
-        showToast('Pemrosesan dibatalkan.', 'normal');
-        await refresh();
+
+        // Langsung hapus sesi dari disk dan database agar tidak masuk riwayat
+        try {
+          await fetch('/api/jobs/' + jobId + '/delete', { method: 'POST' });
+        } catch (_) {}
+
+        showToast('Pemrosesan dibatalkan dan sesi langsung dihapus.', 'normal');
+        setTimeout(() => {
+          window.location.href = '/history';
+        }, 800);
       } catch (err) {
         showToast('Gagal membatalkan: ' + err.message, 'danger');
         if (btn) { btn.disabled = false; btn.textContent = 'Batalkan'; }

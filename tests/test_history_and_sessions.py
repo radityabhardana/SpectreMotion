@@ -290,4 +290,45 @@ def test_facetrack_endpoint_and_preset_default():
     assert "keyframes" in data
 
 
+def test_dead_sessions_purged_and_excluded_from_history():
+    storage.init_db()
+
+    # 1. Create a successful session
+    job_ok = storage.create_job(source_type="url", source_name="Valid Video", source_url="https://youtu.be/valid")
+    storage.update_job(job_ok.id, status=storage.JOB_DONE, stage="done")
+
+    # 2. Create a failed session
+    job_failed = storage.create_job(source_type="url", source_name="Failed Video", source_url="https://youtu.be/failed")
+    storage.update_job(job_failed.id, status=storage.JOB_FAILED, stage="failed", error="Download error")
+
+    # 3. Create a canceled session
+    job_canceled = storage.create_job(source_type="url", source_name="Canceled Video", source_url="https://youtu.be/canceled")
+    storage.update_job(job_canceled.id, status=storage.JOB_CANCELED, stage="canceled")
+
+    # Listing sessions should purge failed & canceled and only return the valid one
+    sessions = storage.list_sessions_with_stats()
+    session_ids = [s["id"] for s in sessions]
+    assert job_ok.id in session_ids
+    assert job_failed.id not in session_ids
+    assert job_canceled.id not in session_ids
+
+    # Dead jobs should be completely deleted from the database
+    assert storage.get_job(job_failed.id) is None
+    assert storage.get_job(job_canceled.id) is None
+
+    # HTML page and JSON endpoint must not contain failed or canceled sessions
+    resp_html = client.get("/history")
+    assert resp_html.status_code == 200
+    assert "Failed Video" not in resp_html.text
+    assert "Canceled Video" not in resp_html.text
+    assert "Valid Video" in resp_html.text
+
+    resp_json = client.get("/api/history")
+    assert resp_json.status_code == 200
+    json_ids = [s["id"] for s in resp_json.json()]
+    assert job_ok.id in json_ids
+    assert job_failed.id not in json_ids
+    assert job_canceled.id not in json_ids
+
+
 

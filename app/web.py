@@ -71,6 +71,7 @@ def _startup() -> None:
     config.ensure_dirs()
     migrate.ensure_schema()
     storage.init_db()
+    storage.purge_dead_sessions()
     from app import auth
     auth.bootstrap_admin_from_token()
     if not config.APP_TOKEN and auth.count_users() == 0:
