@@ -5,7 +5,9 @@ Aplikasi otomatisasi untuk memotong video horizontal panjang menjadi klip vertik
 <!-- [TEMPAT GAMBAR: BANNER / HERO PREVIEW] -->
 <!-- Panduan: Letakkan tangkapan layar antarmuka utama di: docs/assets/hero-preview.png -->
 <!-- Contoh: Tampilan web saat pengguna memasukkan link video YouTube atau preview hasil render -->
-![SpectreMotion Preview](docs/assets/hero-preview.png)
+
+<img width="1535" height="897" alt="image" src="https://github.com/user-attachments/assets/7f33b9ab-dddf-404a-9716-97a865fb7aea" />
+
 
 ---
 
@@ -126,7 +128,7 @@ Buka peramban di: `http://127.0.0.1:8080`
 
 <!-- [TEMPAT GAMBAR: WEB GENERATOR] -->
 <!-- Panduan: Letakkan tangkapan layar form input video / halaman depan di: docs/assets/generator-page.png -->
-![Halaman Generator](docs/assets/generator-page.png)
+<img width="1535" height="894" alt="image" src="https://github.com/user-attachments/assets/ef2de5c0-37bd-459c-b9ae-b691c0c28b0d" />
 
 ### Menjalankan Bot Telegram
 
@@ -157,7 +159,10 @@ Ketika video selesai dianalisis, katalog klip akan menampilkan daftar potongan v
 
 <!-- [TEMPAT GAMBAR: EDITOR MODAL & PHONE PREVIEW] -->
 <!-- Panduan: Letakkan tangkapan layar modal editor klip (frame HP dengan teks hook dan subtitle) di: docs/assets/editor-preview.png -->
-![Editor Klip](docs/assets/editor-preview.png)
+<img width="1534" height="896" alt="image" src="https://github.com/user-attachments/assets/ab9f28d9-ec07-4d0a-8ec8-f8d6ef4394be" />
+
+<img width="1535" height="885" alt="image" src="https://github.com/user-attachments/assets/f770820e-2aba-488e-a2b2-f32043403a32" />
+
 
 1. **Kanvas HP Real-Time**: Memutar video klip 480p instan tanpa proses render ulang.
 2. **Pratinjau Hook**: Menampilkan banner judul pancingan di bagian atas frame (otomatis tampil pada 0s-3s pemutaran). Anda dapat mengedit teks hook langsung dari form editor.
@@ -174,7 +179,8 @@ Menu **Hook Studio** di navigasi atas digunakan untuk mengatur template global t
 
 <!-- [TEMPAT GAMBAR: HOOK STUDIO] -->
 <!-- Panduan: Letakkan tangkapan layar halaman Hook Studio di: docs/assets/hook-studio.png -->
-![Hook Studio](docs/assets/hook-studio.png)
+<img width="1535" height="899" alt="image" src="https://github.com/user-attachments/assets/88c640fd-a17b-4eef-ae56-dd9bf095f474" />
+
 
 - Mengatur ukuran font, radius sudut bubble, dan ketebalan outline teks.
 - Mengatur warna teks utama dan warna highlight (kata yang diapit tanda bintang `*kata*`).
