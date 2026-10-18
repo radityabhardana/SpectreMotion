@@ -113,6 +113,11 @@ def render_clip_job(job: "storage.Job") -> None:
                         except Exception:
                             pass
 
+                # Apply hook style overrides (font_size, font_color, highlight_color, box, box_radius, stroke_w, etc.)
+                hook_overrides = style_overrides.get("hook") or {}
+                if hook_overrides:
+                    template["hook"] = {**(template.get("hook") or {}), **hook_overrides}
+
                 # Apply subtitle overrides (font, size, colors, splitting, position)
                 sub_overrides = style_overrides.get("subtitle") or {}
                 if sub_overrides:

@@ -17,7 +17,7 @@ import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 
 from app import config
 
@@ -57,10 +57,9 @@ def _auth(request: Request) -> None:
         raise HTTPException(401, "Unauthorized")
 
 
-@router.get("/hook-studio", response_class=HTMLResponse)
-def studio_page(request: Request):
-    from app.web import templates  # local import to avoid circular dependency
-    return templates.TemplateResponse("hook_studio.html", {"request": request})
+@router.get("/hook-studio")
+def studio_page():
+    return RedirectResponse(url="/", status_code=302)
 
 
 @router.get("/api/template")

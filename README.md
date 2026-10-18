@@ -22,7 +22,7 @@ Aplikasi otomatisasi untuk memotong video horizontal panjang menjadi klip vertik
   - [Menjalankan Bot Telegram](#menjalankan-bot-telegram)
   - [Menjalankan Worker Terpisah](#menjalankan-worker-terpisah)
 - [Editor Klip dan Pratinjau Interaktif](#editor-klip-dan-pratinjau-interaktif)
-- [Hook Studio](#hook-studio)
+- [Kustomisasi Gaya Hook Langsung di Preview](#kustomisasi-gaya-hook-langsung-di-preview)
 - [Konfigurasi Environment (.env)](#konfigurasi-environment-env)
 - [Sistem Campaign](#sistem-campaign)
 - [Deployment](#deployment)
@@ -42,7 +42,7 @@ SpectreMotion dirancang sebagai alternatif self-hosted untuk layanan seperti 2sh
 - **Transkripsi Kata demi Kata (Whisper)**: Ekstraksi ucapan dengan timestamp presisi tinggi per kata untuk kebutuhan subtitle animasi karaoke. Dilengkapi sistem caching agar video yang sama tidak perlu ditranskripsi berulang kali.
 - **Deteksi Momen Viral (LLM)**: Menilai dan memilih bagian video terbaik berdasarkan 5 indikator virality (hook strength, emotional intensity, shareability, clarity, payoff). Menyertakan pembuatan caption dan hashtag siap pakai.
 - **Live Phone Preview**: Tampilan kanvas 9:16 interaktif untuk mengecek posisi video mentah, animasi subtitle karaoke, dan banner hook secara real-time sebelum melakukan render final.
-- **Hook Studio & Overlay Pembuka**: Pengaturan banner judul hook di 3 detik pertama video dengan dukungan kotak bubble, outline, dan highlight kata khusus.
+- **Kustomisasi Hook Langsung di Preview**: Pengaturan banner judul hook (0-3 detik) terintegrasi langsung di modal pratinjau klip dengan preset instan, slider ukuran, radius sudut bubble, warna teks, dan highlight kata khusus.
 - **Face Tracking 9:16**: Pelacakan posisi wajah pembicara menggunakan OpenCV agar subjek selalu berada di area tengah layar pada video rasio vertikal.
 - **Preset Subtitle Siap Pakai**: Mendukung berbagai gaya populer (Hormozi, Super Simple, Simple Boxy, They Are Spoken, Subtitles, dll) serta kustomisasi font, ukuran, warna sorotan, dan posisi drag-and-drop.
 - **Manajemen Sesi dan Riwayat**: Dashboard pencarian, pemutaran klip, pengunduhan file MP4, serta fitur hapus sesi massal (batch delete) untuk menghemat ruang disk.
@@ -173,19 +173,14 @@ Ketika video selesai dianalisis, katalog klip akan menampilkan daftar potongan v
 
 ---
 
-## Hook Studio
+## Kustomisasi Gaya Hook Langsung di Preview
 
-Menu **Hook Studio** di navigasi atas digunakan untuk mengatur template global tampilan hook/judul pancingan:
+Kustomisasi banner judul pancingan (hook 0-3 detik) kini terintegrasi langsung di modal pratinjau editor klip tanpa perlu berpindah ke halaman lain:
 
-<!-- [TEMPAT GAMBAR: HOOK STUDIO] -->
-<!-- Panduan: Letakkan tangkapan layar halaman Hook Studio di: docs/assets/hook-studio.png -->
-<img width="1535" height="899" alt="image" src="https://github.com/user-attachments/assets/88c640fd-a17b-4eef-ae56-dd9bf095f474" />
-
-
-- Mengatur ukuran font, radius sudut bubble, dan ketebalan outline teks.
-- Mengatur warna teks utama dan warna highlight (kata yang diapit tanda bintang `*kata*`).
-- Pratinjau statis 9:16 untuk melihat perbandingan tata letak sebelum disimpan.
-- Template yang disimpan akan menjadi nilai default bagi seluruh klip baru yang diproses.
+- **Preset Gaya Instan**: Pilih langsung dari preset populer seperti CapCut Modern, Alex Hormozi, Cyber Neon, Spoken Green, Subtitles Cyan, Viral Pink, Cinematic, Minimal (No Box), dan Super Simple.
+- **Slider & Kontrol Real-Time**: Atur ukuran font, radius sudut kotak bubble, warna teks utama, serta warna highlight (kata yang diapit tanda `*kata*`) dengan perubahan yang langsung tampil di layar pratinjau ponsel 9:16.
+- **Kotak Bubble & Outline Teks**: Aktifkan atau nonaktifkan kotak latar belakang (bubble) dan stroke outline teks sesuai kebutuhan klip.
+- **Simpan Sebagai Default**: Tombol *Simpan default* untuk menyimpan pengaturan gaya hook favorit Anda ke template utama agar otomatis diterapkan ke proses video baru.
 
 ---
 

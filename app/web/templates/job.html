@@ -275,7 +275,6 @@
     <nav class="nav-links">
       <a href="/" class="nav-link">Generator</a>
       <a href="/history" class="nav-link">Riwayat</a>
-      <a href="/hook-studio" class="nav-link">Hook Studio</a>
     </nav>
   </header>
 
@@ -516,8 +515,8 @@
         </div>
 
         <div class="editor-controls" style="overflow-y: auto; max-height: calc(85vh - 120px); padding-right: 6px;">
-          <!-- Section 0: Hook Video Header & Text -->
-          <div class="editor-section" style="background: rgba(198, 249, 74, 0.03); border: 1px solid rgba(198, 249, 74, 0.18); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px;">
+          <!-- Section 0: Hook Video Header, Text & Realtime Style Controls -->
+          <div class="editor-section" style="background: rgba(198, 249, 74, 0.03); border: 1px solid rgba(198, 249, 74, 0.18); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 16px;">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
               <div style="display: flex; align-items: center; gap: 7px;">
                 <span style="font-size: 15px;">🪝</span>
@@ -530,12 +529,93 @@
             </div>
             <p class="editor-hint" style="margin-bottom: 8px; font-size: 11.5px;">Judul pancingan viral di atas video pada 3 detik pertama. Gunakan <code>*kata*</code> untuk highlight warna.</p>
             <textarea id="ed-hook-text-input" rows="2" style="width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 12.5px; font-weight: 600; padding: 7px 10px; resize: vertical; box-sizing: border-box; line-height: 1.35;" placeholder="Teks hook..." oninput="onHookInput(this.value)"></textarea>
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 6px;">
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; margin-bottom: 12px; flex-wrap: wrap; gap: 6px;">
               <label style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); cursor: pointer;">
                 <input type="checkbox" id="ed-hook-always-preview" class="custom-checkbox" onchange="toggleHookAlwaysPreview(this.checked)" checked />
                 <span>Kunci preview hook (selalu tampil saat edit)</span>
               </label>
               <button type="button" class="btn btn-sm btn-secondary" onclick="previewHookJump()" style="padding: 2px 10px; font-size: 11px;">▶ Cek Detik 0s</button>
+            </div>
+
+            <!-- Hook Presets & Style Tuning -->
+            <div style="border-top: 1px dashed rgba(255,255,255,0.08); padding-top: 10px; margin-top: 4px;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <span style="font-size: 12px; font-weight: 700; color: var(--text);">Preset Gaya Hook</span>
+                <span style="font-size: 10.5px; color: var(--text-muted);">Real-time di preview</span>
+              </div>
+              <div class="hook-preset-chips" id="hook-preset-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                <button type="button" class="pill-btn active" id="hk-preset-capcut" onclick="applyHookPreset('capcut')">CapCut Modern</button>
+                <button type="button" class="pill-btn" id="hk-preset-hormozi" onclick="applyHookPreset('hormozi')">Alex Hormozi</button>
+                <button type="button" class="pill-btn" id="hk-preset-neon" onclick="applyHookPreset('neon')">Cyber Neon</button>
+                <button type="button" class="pill-btn" id="hk-preset-spoken" onclick="applyHookPreset('spoken')">Spoken Green</button>
+                <button type="button" class="pill-btn" id="hk-preset-subtitles" onclick="applyHookPreset('subtitles')">Subtitles Cyan</button>
+                <button type="button" class="pill-btn" id="hk-preset-viralpink" onclick="applyHookPreset('viralpink')">Viral Pink</button>
+                <button type="button" class="pill-btn" id="hk-preset-cinematic" onclick="applyHookPreset('cinematic')">Cinematic</button>
+                <button type="button" class="pill-btn" id="hk-preset-minimal" onclick="applyHookPreset('minimal')">Minimal (No Box)</button>
+                <button type="button" class="pill-btn" id="hk-preset-simple" onclick="applyHookPreset('simple')">Super Simple</button>
+              </div>
+
+              <!-- Hook Custom Controls (Font, Radius, Color, Box, Stroke) -->
+              <div style="background: rgba(0,0,0,0.22); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                  <div>
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 4px;">Ukuran Font: <span id="hk-fontsize-val" class="mono" style="color:var(--text); font-weight:700;">64</span>px</label>
+                    <input type="range" id="hk-fontsize-range" min="36" max="110" value="64" style="width: 100%; accent-color: var(--accent); cursor: pointer;" oninput="onHookFontSizeInput(this.value)" />
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 4px;">Radius Kotak: <span id="hk-radius-val" class="mono" style="color:var(--text); font-weight:700;">18</span>px</label>
+                    <input type="range" id="hk-radius-range" min="0" max="40" value="18" style="width: 100%; accent-color: var(--accent); cursor: pointer;" oninput="onHookRadiusInput(this.value)" />
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: center;">
+                  <div>
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 4px;">Warna Highlight (*kata*)</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="color" id="hk-highlight-color" value="#00FF66" class="color-circle-input" oninput="onHookHighlightInput(this.value)" style="width: 28px; height: 28px;" />
+                      <span id="hk-highlight-hex" class="mono" style="font-size: 11px; font-weight: 700; color: var(--text);">#00FF66</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-2); display: block; margin-bottom: 4px;">Warna Teks Utama</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="color" id="hk-font-color" value="#FFFFFF" class="color-circle-input" oninput="onHookFontColorInput(this.value)" style="width: 28px; height: 28px;" />
+                      <span id="hk-font-hex" class="mono" style="font-size: 11px; font-weight: 700; color: var(--text);">#FFFFFF</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Highlight Quick Color Palette Chips -->
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <span style="font-size: 10px; color: var(--text-muted); margin-right: 2px;">Warna Cepat:</span>
+                  <button type="button" class="color-dot-btn" style="background:#00FF66; width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,0.4); cursor:pointer;" onclick="onHookHighlightInput('#00FF66')" title="Neon Green"></button>
+                  <button type="button" class="color-dot-btn" style="background:#FFE600; width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,0.4); cursor:pointer;" onclick="onHookHighlightInput('#FFE600')" title="Hormozi Gold"></button>
+                  <button type="button" class="color-dot-btn" style="background:#00E5FF; width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,0.4); cursor:pointer;" onclick="onHookHighlightInput('#00E5FF')" title="Cyber Cyan"></button>
+                  <button type="button" class="color-dot-btn" style="background:#FF0077; width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,0.4); cursor:pointer;" onclick="onHookHighlightInput('#FF0077')" title="Viral Pink"></button>
+                  <button type="button" class="color-dot-btn" style="background:#FF7A00; width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,0.4); cursor:pointer;" onclick="onHookHighlightInput('#FF7A00')" title="Vibrant Orange"></button>
+                  <button type="button" class="color-dot-btn" style="background:#FFFFFF; width:18px; height:18px; border-radius:50%; border:1px solid rgba(255,255,255,0.4); cursor:pointer;" onclick="onHookHighlightInput('#FFFFFF')" title="Clean White"></button>
+                </div>
+
+                <!-- Toggles: Box Bubble & Stroke -->
+                <div style="display: flex; gap: 16px; flex-wrap: wrap; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.06);">
+                  <label class="check-label" style="font-size: 11.5px; color: var(--text-2); display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="hk-box-on" class="custom-checkbox" checked onchange="onHookBoxToggle(this.checked)" />
+                    <span>Kotak latar (bubble)</span>
+                  </label>
+                  <label class="check-label" style="font-size: 11.5px; color: var(--text-2); display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <input type="checkbox" id="hk-stroke-on" class="custom-checkbox" onchange="onHookStrokeToggle(this.checked)" />
+                    <span>Outline teks (stroke)</span>
+                  </label>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 2px;">
+                  <button type="button" class="btn btn-sm btn-secondary" onclick="saveAsDefaultHookTemplate()" style="font-size: 11px; padding: 3px 10px;" title="Simpan gaya hook saat ini sebagai template default global">
+                    💾 Simpan default
+                  </button>
+                  <span id="hk-save-status" style="font-size: 11px; color: var(--accent);"></span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -862,11 +942,104 @@
       }
     }
 
+    const HOOK_PRESETS = {
+      capcut: {
+        name: 'CapCut Modern',
+        font_size: 64,
+        box_radius: 24,
+        font_color: '#FFFFFF',
+        highlight_color: '#00FF66',
+        box: true,
+        box_color: '#141824@0.80',
+        stroke_w: 0
+      },
+      hormozi: {
+        name: 'Alex Hormozi',
+        font_size: 80,
+        box_radius: 16,
+        font_color: '#FFFFFF',
+        highlight_color: '#FFE600',
+        box: true,
+        box_color: '#0A0A0A@0.92',
+        stroke_w: 3
+      },
+      neon: {
+        name: 'Cyber Neon',
+        font_size: 66,
+        box_radius: 20,
+        font_color: '#FFFFFF',
+        highlight_color: '#00E5FF',
+        box: true,
+        box_color: '#050814@0.92',
+        stroke_w: 0
+      },
+      spoken: {
+        name: 'Spoken Green',
+        font_size: 68,
+        box_radius: 18,
+        font_color: '#FFFFFF',
+        highlight_color: '#00FF88',
+        box: true,
+        box_color: '#000000@0.70',
+        stroke_w: 2
+      },
+      subtitles: {
+        name: 'Subtitles Cyan',
+        font_size: 66,
+        box_radius: 18,
+        font_color: '#FFFFFF',
+        highlight_color: '#00E5FF',
+        box: true,
+        box_color: '#000000@0.65',
+        stroke_w: 2
+      },
+      viralpink: {
+        name: 'Viral Pink',
+        font_size: 68,
+        box_radius: 20,
+        font_color: '#FFFFFF',
+        highlight_color: '#FF0077',
+        box: true,
+        box_color: '#0D0714@0.88',
+        stroke_w: 2
+      },
+      cinematic: {
+        name: 'Cinematic',
+        font_size: 72,
+        box_radius: 6,
+        font_color: '#FFFFFF',
+        highlight_color: '#F5C518',
+        box: true,
+        box_color: '#080C14@0.88',
+        stroke_w: 0
+      },
+      minimal: {
+        name: 'Minimal (No Box)',
+        font_size: 76,
+        box_radius: 0,
+        font_color: '#FFFFFF',
+        highlight_color: '#FFFFFF',
+        box: false,
+        box_color: '#000000@0.0',
+        stroke_w: 2
+      },
+      simple: {
+        name: 'Super Simple',
+        font_size: 64,
+        box_radius: 14,
+        font_color: '#FFFFFF',
+        highlight_color: '#FFFFFF',
+        box: true,
+        box_color: '#000000@0.55',
+        stroke_w: 0
+      }
+    };
+
     function esc(s) {
       return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
-    function formatHookHtml(text, hlColor = '#00FF66') {
+    function formatHookHtml(text, hlColor = '#00FF66', fontColor = '#FFFFFF') {
       if (!text) return '';
       const words = text.split(/\s+/);
       return words.map(raw => {
@@ -880,7 +1053,7 @@
         if (em) {
           return `<span style="color: ${hlColor}; font-weight: 900;">${safe}</span>`;
         }
-        return safe;
+        return `<span style="color: ${fontColor};">${safe}</span>`;
       }).join(' ');
     }
 
@@ -902,72 +1075,134 @@
       renderHookOverlay();
     }
 
-    function previewHookJump() {
-      const v = document.getElementById('ed-video');
-      if (v) {
-        v.currentTime = 0;
-        v.play().catch(() => {});
-      }
-      editorState.hookAlwaysPreview = true;
-      const hookLock = document.getElementById('ed-hook-always-preview');
-      if (hookLock) hookLock.checked = true;
-      updateTimelineDisplay();
+    function applyHookPreset(presetKey) {
+      const p = HOOK_PRESETS[presetKey];
+      if (!p) return;
+      editorState.hookConfig = Object.assign({}, editorState.hookConfig || {}, p, { preset: presetKey });
+      syncHookUIFromState();
       renderHookOverlay();
-      renderSubtitleOverlay();
-      showToast('Lompat ke detik 0s (Awal Hook).', 'normal');
+      showToast('Preset Hook: ' + p.name + ' diterapkan ke preview.', 'normal');
     }
 
-    function renderHookOverlay() {
-      const box = document.getElementById('live-hook-box');
-      const textEl = document.getElementById('live-hook-text');
-      if (!box || !textEl) return;
+    function onHookFontSizeInput(val) {
+      if (!editorState.hookConfig) editorState.hookConfig = {};
+      editorState.hookConfig.font_size = parseInt(val, 10) || 64;
+      const el = document.getElementById('hk-fontsize-val');
+      if (el) el.textContent = editorState.hookConfig.font_size;
+      renderHookOverlay();
+    }
 
-      if (!editorState.hookEnabled || !editorState.hook || !editorState.hook.trim()) {
-        box.style.display = 'none';
-        return;
-      }
-      box.style.display = 'flex';
+    function onHookRadiusInput(val) {
+      if (!editorState.hookConfig) editorState.hookConfig = {};
+      editorState.hookConfig.box_radius = parseInt(val, 10) || 18;
+      const el = document.getElementById('hk-radius-val');
+      if (el) el.textContent = editorState.hookConfig.box_radius;
+      renderHookOverlay();
+    }
 
-      const v = document.getElementById('ed-video');
-      const t = (v && v.currentTime) || 0;
-      const isTimeActive = (t <= 3.2);
-      const alwaysShow = (editorState.hookAlwaysPreview !== false);
+    function onHookHighlightInput(color) {
+      if (!editorState.hookConfig) editorState.hookConfig = {};
+      editorState.hookConfig.highlight_color = color;
+      const hexEl = document.getElementById('hk-highlight-hex');
+      const pickEl = document.getElementById('hk-highlight-color');
+      if (hexEl) hexEl.textContent = color.toUpperCase();
+      if (pickEl) pickEl.value = color;
+      renderHookOverlay();
+    }
 
-      if (isTimeActive || alwaysShow) {
-        box.style.opacity = '1';
-        box.style.visibility = 'visible';
-        box.style.transform = 'translateY(0)';
-      } else {
-        box.style.opacity = '0';
-        box.style.visibility = 'hidden';
-        box.style.transform = 'translateY(-4px)';
-      }
+    function onHookFontColorInput(color) {
+      if (!editorState.hookConfig) editorState.hookConfig = {};
+      editorState.hookConfig.font_color = color;
+      const hexEl = document.getElementById('hk-font-hex');
+      const pickEl = document.getElementById('hk-font-color');
+      if (hexEl) hexEl.textContent = color.toUpperCase();
+      if (pickEl) pickEl.value = color;
+      renderHookOverlay();
+    }
 
-      const hookCfg = editorState.hookConfig || {};
-      const hlColor = hookCfg.highlight_color || '#00FF66';
-      textEl.innerHTML = formatHookHtml(editorState.hook, hlColor);
+    function onHookBoxToggle(checked) {
+      if (!editorState.hookConfig) editorState.hookConfig = {};
+      editorState.hookConfig.box = checked;
+      renderHookOverlay();
+    }
 
-      const frame = document.getElementById('live-hook-frame');
-      if (frame) {
-        if (hookCfg.box === false) {
-          frame.style.background = 'transparent';
-          frame.style.boxShadow = 'none';
-          frame.style.border = 'none';
-        } else {
-          let bg = hookCfg.box_color || '#000000@0.55';
-          if (bg && bg.includes('@')) {
-            const parts = bg.split('@');
-            frame.style.background = `rgba(0, 0, 0, ${parts[1] || 0.65})`;
-          } else {
-            frame.style.background = 'rgba(0, 0, 0, 0.65)';
+    function onHookStrokeToggle(checked) {
+      if (!editorState.hookConfig) editorState.hookConfig = {};
+      editorState.hookConfig.stroke_w = checked ? 3 : 0;
+      renderHookOverlay();
+    }
+
+    function syncHookUIFromState() {
+      const cfg = editorState.hookConfig || {};
+      const fs = cfg.font_size || 64;
+      const rad = (cfg.box_radius !== undefined) ? cfg.box_radius : 18;
+      const hl = cfg.highlight_color || '#00FF66';
+      const fc = cfg.font_color || '#FFFFFF';
+      const boxOn = (cfg.box !== false);
+      const strokeOn = ((cfg.stroke_w || 0) > 0);
+
+      const fsR = document.getElementById('hk-fontsize-range');
+      const fsV = document.getElementById('hk-fontsize-val');
+      if (fsR) fsR.value = fs;
+      if (fsV) fsV.textContent = fs;
+
+      const radR = document.getElementById('hk-radius-range');
+      const radV = document.getElementById('hk-radius-val');
+      if (radR) radR.value = rad;
+      if (radV) radV.textContent = rad;
+
+      const hlP = document.getElementById('hk-highlight-color');
+      const hlH = document.getElementById('hk-highlight-hex');
+      if (hlP) hlP.value = hl;
+      if (hlH) hlH.textContent = hl.toUpperCase();
+
+      const fcP = document.getElementById('hk-font-color');
+      const fcH = document.getElementById('hk-font-hex');
+      if (fcP) fcP.value = fc;
+      if (fcH) fcH.textContent = fc.toUpperCase();
+
+      const boxC = document.getElementById('hk-box-on');
+      if (boxC) boxC.checked = boxOn;
+
+      const strokeC = document.getElementById('hk-stroke-on');
+      if (strokeC) strokeC.checked = strokeOn;
+
+      const curPreset = cfg.preset || '';
+      document.querySelectorAll('#hook-preset-chips .pill-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.id === 'hk-preset-' + curPreset);
+      });
+    }
+
+    async function saveAsDefaultHookTemplate() {
+      const statusEl = document.getElementById('hk-save-status');
+      if (statusEl) statusEl.textContent = 'Menyimpan...';
+      try {
+        const curTmpl = await (await fetch('/api/template')).json();
+        const hookCfg = editorState.hookConfig || {};
+        curTmpl.hook = Object.assign({}, curTmpl.hook || {}, {
+          font_size: parseInt(hookCfg.font_size, 10) || 64,
+          font_color: hookCfg.font_color || '#FFFFFF',
+          highlight_color: hookCfg.highlight_color || '#00FF66',
+          box: (hookCfg.box !== false),
+          box_radius: parseInt(hookCfg.box_radius, 10) || 18,
+          stroke_w: (hookCfg.stroke_w > 0) ? 3 : 0,
+        });
+        const res = await fetch('/api/template', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(curTmpl)
+        });
+        if (res.ok) {
+          if (statusEl) {
+            statusEl.textContent = '✓ Default tersimpan';
+            setTimeout(() => { statusEl.textContent = ''; }, 3000);
           }
-          frame.style.borderRadius = (hookCfg.box_radius ? Math.round(hookCfg.box_radius * 0.7) : 14) + 'px';
-        }
-        if (hookCfg.stroke_w) {
-          textEl.style.textShadow = '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000';
+          showToast('Gaya hook disimpan sebagai template default.', 'success');
         } else {
-          textEl.style.textShadow = '0 2px 8px rgba(0,0,0,0.8)';
+          if (statusEl) statusEl.textContent = 'Gagal menyimpan';
         }
+      } catch (err) {
+        if (statusEl) statusEl.textContent = 'Error: ' + err.message;
       }
     }
 
@@ -1006,6 +1241,7 @@
 
       applySubtitlePosition(82);
       syncUIFromState();
+      syncHookUIFromState();
       updateLivePreview();
       renderHookOverlay();
       renderTimelineTicks(duration || 30);
@@ -1802,6 +2038,16 @@
           position: editorState.position,
           hook_text: customHook,
           hook_enabled: Boolean(editorState.hookEnabled),
+          hook: {
+            font_size: parseInt(editorState.hookConfig.font_size, 10) || 64,
+            font_color: editorState.hookConfig.font_color || '#FFFFFF',
+            highlight_color: editorState.hookConfig.highlight_color || '#00FF66',
+            box: (editorState.hookConfig.box !== false),
+            box_radius: parseInt(editorState.hookConfig.box_radius, 10) || 18,
+            box_color: editorState.hookConfig.box_color || '#000000@0.55',
+            stroke_w: (editorState.hookConfig.stroke_w > 0) ? 3 : 0,
+            stroke_color: editorState.hookConfig.stroke_color || '#000000',
+          },
           subtitle: {
             subtitles_enabled: Boolean(editorState.subtitlesEnabled),
             font_name: editorState.fontName,

@@ -958,6 +958,18 @@ tbody tr:last-child td { border-bottom: none; }
   word-break: break-word;
   letter-spacing: 0.2px;
 }
+.color-dot-btn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.color-dot-btn:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 8px rgba(255,255,255,0.4);
+}
+.hook-preset-chips .pill-btn {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: var(--pill);
+}
 
 /* CapCut-Style Timeline Bar */
 .capcut-timeline-card {
