@@ -356,6 +356,7 @@ input:focus, select:focus, textarea:focus {
 .pill-running, .pill-succeeded { color: var(--accent); border-color: var(--accent-border); background: var(--accent-soft); }
 .pill-done, .pill-pass { color: var(--ok); border-color: rgba(52, 211, 153, 0.35); background: var(--ok-soft); }
 .pill-failed, .pill-fail { color: var(--danger); border-color: rgba(248, 113, 113, 0.35); background: var(--danger-soft); }
+.pill-canceled { color: var(--text-2); border-color: rgba(148, 163, 184, 0.35); background: rgba(148, 163, 184, 0.1); }
 .pill-warn { color: var(--warn); border-color: rgba(251, 191, 36, 0.35); background: var(--warn-soft); }
 
 .live-dot {
@@ -896,63 +897,300 @@ tbody tr:last-child td { border-bottom: none; }
 .sub-preview-text .hi-word { display: inline-block; transform: scale(1.12); margin: 0 3px; }
 
 /* Hook Preview Overlay in Phone Frame */
+/* Hook Preview Overlay in Phone Frame */
 .hook-preview-box {
   position: absolute;
-  top: 12%;
+  top: 48px;
   left: 12px;
   right: 12px;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 6;
+  z-index: 25;
   pointer-events: none;
-  transition: opacity 0.28s ease, transform 0.28s ease;
+  transition: opacity 0.22s ease, transform 0.22s ease;
   user-select: none;
 }
 .hook-preview-frame {
   position: relative;
-  max-width: 90%;
-  background: rgba(0, 0, 0, 0.65);
+  max-width: 94%;
+  background: rgba(8, 8, 12, 0.85);
   border-radius: 14px;
-  padding: 6px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+  padding: 7px 14px;
+  border: 1.5px solid rgba(198, 249, 74, 0.45);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.75), 0 0 16px rgba(198, 249, 74, 0.12);
   text-align: center;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 .hook-preview-badge {
   position: absolute;
-  top: -9px;
-  right: 8px;
+  top: -10px;
+  right: 10px;
   background: #000000;
   color: var(--accent);
-  border: 1px solid rgba(198, 249, 74, 0.35);
+  border: 1px solid rgba(198, 249, 74, 0.5);
   border-radius: var(--pill);
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 800;
-  padding: 1px 6px;
+  padding: 2px 8px;
   display: flex;
   align-items: center;
   gap: 4px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 .hook-preview-badge .hook-dot {
   width: 5px;
   height: 5px;
   border-radius: 50%;
   background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
 }
 .hook-preview-text {
   font-family: 'Montserrat', Arial, sans-serif;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 800;
-  line-height: 1.25;
+  line-height: 1.3;
   color: #ffffff;
   text-align: center;
   word-break: break-word;
   letter-spacing: 0.2px;
+}
+
+/* CapCut-Style Timeline Bar */
+.capcut-timeline-card {
+  background: rgba(14, 15, 19, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-top: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+.capcut-time-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.capcut-time-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.capcut-time-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text-3);
+  letter-spacing: 0.5px;
+}
+.capcut-time-current {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  font-size: 13.5px;
+}
+.capcut-time-sep {
+  color: var(--text-3);
+}
+.capcut-time-total {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.capcut-phase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: var(--pill);
+  transition: all 0.2s ease;
+}
+.capcut-phase-badge.is-hook {
+  background: rgba(198, 249, 74, 0.14);
+  color: var(--accent);
+  border: 1px solid rgba(198, 249, 74, 0.35);
+  box-shadow: 0 0 10px rgba(198, 249, 74, 0.15);
+}
+.capcut-phase-badge.is-content {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.capcut-phase-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.capcut-jump-hook-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: var(--pill);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.capcut-jump-hook-btn:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+
+/* CapCut Interactive Track Container */
+.capcut-track-container {
+  position: relative;
+  height: 38px;
+  background: #08090c;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.capcut-ruler-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.capcut-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0 3px;
+}
+.capcut-tick-line {
+  width: 1px;
+  height: 7px;
+  background: rgba(255, 255, 255, 0.18);
+}
+.capcut-tick-label {
+  font-size: 8px;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: monospace;
+  font-weight: 600;
+}
+.capcut-hook-highlight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 10%;
+  background: linear-gradient(135deg, rgba(198, 249, 74, 0.25), rgba(198, 249, 74, 0.08));
+  border-right: 2px dashed rgba(198, 249, 74, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 6px;
+  z-index: 2;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.capcut-hook-zone-badge {
+  font-size: 8.5px;
+  font-weight: 900;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  white-space: nowrap;
+}
+.capcut-content-track-label {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 8.5px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.22);
+  letter-spacing: 0.8px;
+  pointer-events: none;
+  z-index: 1;
+}
+.capcut-progress-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(198, 249, 74, 0.32);
+  pointer-events: none;
+  z-index: 3;
+  transition: width 0.05s linear;
+}
+.capcut-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  z-index: 6;
+  pointer-events: none;
+  transition: left 0.05s linear;
+}
+.capcut-needle-handle {
+  position: absolute;
+  top: 0;
+  left: -7px;
+  width: 14px;
+  height: 14px;
+  background: #ffffff;
+  border: 2px solid var(--accent);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.85);
+  cursor: grab;
+}
+.capcut-needle-line {
+  position: absolute;
+  top: 13px;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(255,255,255,0.9);
+}
+.capcut-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.capcut-btn {
+  padding: 5px 11px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 8px;
+}
+.capcut-play-btn {
+  background: var(--accent);
+  color: #000;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+}
+.capcut-play-btn:hover {
+  background: #b5ee3a;
+  color: #000;
+}
+.capcut-status-text {
+  font-size: 11px;
+  color: var(--text-3);
 }
 
 .editor-controls { display: flex; flex-direction: column; gap: 14px; min-width: 0; }

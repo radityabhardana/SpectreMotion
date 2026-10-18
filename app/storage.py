@@ -21,11 +21,12 @@ from app import config
 
 SCHEMA_VERSION = 1
 
-# Job lifecycle: queued -> running -> done | failed
+# Job lifecycle: queued -> running -> done | failed | canceled
 JOB_QUEUED = "queued"
 JOB_RUNNING = "running"
 JOB_DONE = "done"
 JOB_FAILED = "failed"
+JOB_CANCELED = "canceled"
 
 _lock = threading.Lock()
 

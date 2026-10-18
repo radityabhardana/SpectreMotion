@@ -191,6 +191,10 @@ def process_job(job: storage.Job, progress: Optional[ProgressFn] = None) -> None
     channel = job.id
 
     def emit(stage: str, pct: float, message: str = "") -> None:
+        from app import cancel as cancel_mod
+        token = cancel_mod.get_token(job.id)
+        if token and token.cancelled():
+            raise cancel_mod.JobCancelled(f"Job {job.id[:8]} dibatalkan pengguna")
         storage.update_job(job.id, stage=stage, progress=pct, message=message)
         events.publish(channel, {"type": "stage", "stage": stage,
                                  "progress": pct, "message": message})
@@ -291,6 +295,13 @@ def process_job(job: storage.Job, progress: Optional[ProgressFn] = None) -> None
                      detail={"clips": len(clips), "rendered": len(to_render),
                              "campaign_id": job.campaign_id}, actor="worker")
 
+    except cancel_mod.JobCancelled:
+        log.info("[job %s] Job dibatalkan pengguna", job.id[:8])
+        storage.update_job(job.id, status=storage.JOB_CANCELED, stage="canceled",
+                           message="Dibatalkan pengguna")
+        events.publish(channel, {"type": "job.canceled", "job_id": job.id,
+                                 "message": "Dibatalkan pengguna"})
+        raise
     except Exception as exc:  # noqa: BLE001 — record any failure
         log.exception("[job %s] FAILED: %s", job.id[:8], exc)
         storage.update_job(job.id, status=storage.JOB_FAILED, stage="failed",

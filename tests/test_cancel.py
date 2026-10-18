@@ -108,3 +108,56 @@ def test_fake_transcriber_error_on_cancelled_token():
             FakeTranscriber().transcribe("v.mp4", "/tmp", token=t)
     finally:
         clear("x")
+
+
+def test_cancel_job_api_and_button_visibility(tmp_path, monkeypatch):
+    """Test cancelling queued job via API and verifying UI button display logic."""
+    from fastapi.testclient import TestClient
+    from app import config, storage
+    from app.web import app
+
+    dbp = tmp_path / "app_cancel_test.db"
+    monkeypatch.setattr(config, "DB_PATH", dbp)
+    monkeypatch.setattr(storage.config, "DB_PATH", dbp)
+    from app.db import migrate
+    monkeypatch.setattr(migrate.config, "DB_PATH", dbp)
+    for modname in ("queue_sqlite", "events_memory"):
+        m = __import__(f"app.adapters.{modname}", fromlist=["config"])
+        monkeypatch.setattr(m.config, "DB_PATH", dbp)
+
+    storage.init_db()
+    client = TestClient(app)
+
+    # 1. Create a queued job
+    job = storage.create_job(source_type="url", source_url="https://youtu.be/cancel_test")
+    assert job.status == storage.JOB_QUEUED
+
+    # 2. In queued state, 'Batalkan' must be visible and 'Hapus sesi' must be hidden
+    resp_page = client.get(f"/jobs/{job.id}")
+    assert resp_page.status_code == 200
+    assert 'id="btn-cancel"' in resp_page.text
+    assert 'style="display: inline-block;"' in resp_page.text
+    assert 'id="btn-delete-job" class="btn btn-sm btn-danger" onclick="deleteSession()" style="display: none;"' in resp_page.text
+
+    # 3. Cancel the job via POST /api/jobs/{job_id}/cancel
+    resp_cancel = client.post(f"/api/jobs/{job.id}/cancel")
+    assert resp_cancel.status_code == 200
+    assert resp_cancel.json()["ok"] is True
+
+    # 4. Storage must reflect status 'canceled'
+    refreshed = storage.get_job(job.id)
+    assert refreshed.status == storage.JOB_CANCELED
+    assert refreshed.stage == "canceled"
+
+    # 5. In canceled state, 'Batalkan' must be hidden and 'Hapus sesi' must be visible
+    resp_page2 = client.get(f"/jobs/{job.id}")
+    assert resp_page2.status_code == 200
+    assert 'id="btn-cancel" class="btn btn-sm btn-secondary" onclick="cancelJob()" style="display: none;"' in resp_page2.text
+    assert 'id="btn-delete-job" class="btn btn-sm btn-danger" onclick="deleteSession()" style="display: inline-block;"' in resp_page2.text
+
+    # 6. Delete session via POST /api/jobs/{job_id}/delete
+    resp_del = client.post(f"/api/jobs/{job.id}/delete")
+    assert resp_del.status_code == 200
+    assert resp_del.json()["ok"] is True
+    assert storage.get_job(job.id) is None
+

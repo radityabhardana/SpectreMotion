@@ -55,6 +55,13 @@ def run(once: bool = False) -> None:
             queue.fail(lease, "Job hilang setelah diklaim")
             continue
 
+        if job.status == storage.JOB_CANCELED:
+            log.info("Job %s was canceled before work started", job.id[:8])
+            continue
+
+        from app import cancel as cancel_mod
+        cancel_mod.new_token(job.id)
+
         log.info("Claimed job %s (%s)", job.id[:8], job.source_name or job.source_url)
         queue.heartbeat(lease, config.JOB_LEASE_SECONDS)
         try:
@@ -65,13 +72,19 @@ def run(once: bool = False) -> None:
             else:
                 process_job(job)
             refreshed = storage.get_job(job.id)
-            if refreshed and refreshed.status == storage.JOB_FAILED:
+            if refreshed and refreshed.status == storage.JOB_CANCELED:
+                log.info("Job %s was canceled by user; not completing queue lease", job.id[:8])
+            elif refreshed and refreshed.status == storage.JOB_FAILED:
                 queue.fail(lease, refreshed.error or "pipeline failed", retryable=False)
             else:
                 queue.complete(lease, {"status": "done"})
+        except cancel_mod.JobCancelled:
+            log.info("Job %s canceled mid-flight", job.id[:8])
         except Exception as exc:  # noqa: BLE001
             log.exception("Unhandled worker error for job %s", job.id[:8])
             queue.fail(lease, str(exc), retryable=True)
+        finally:
+            cancel_mod.clear(job.id)
 
         if once:
             return

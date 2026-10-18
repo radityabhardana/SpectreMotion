@@ -366,10 +366,16 @@ async def api_batch_delete_clips(request: Request, _: None = Depends(require_aut
 @app.post("/api/jobs/{job_id}/cancel")
 def api_cancel_job(job_id: str, _: None = Depends(require_auth)):
     from app import cancel as cancel_mod
+    job = storage.get_job(job_id)
+    if not job:
+        raise HTTPException(404, "Sesi tidak ditemukan")
     queue = registry.get_queue()
     queue.cancel(job_id)
     cancel_mod.cancel_key(job_id)
     storage.update_job(job_id, status=storage.JOB_CANCELED, stage="canceled", message="Dibatalkan pengguna")
+    events = registry.get_events()
+    events.publish(job_id, {"type": "job.canceled", "job_id": job_id})
+    events.publish(job_id, {"type": "stage", "stage": "canceled", "progress": 0.0, "message": "Dibatalkan pengguna"})
     return {"ok": True}
 
 
