@@ -1,235 +1,232 @@
-<div align="center">
+# SpectreMotion
 
-<img src="docs/assets/under-construction.svg" alt="SpectreMotion — Under Construction" width="100%" />
+Aplikasi otomatisasi untuk memotong video horizontal panjang menjadi klip vertikal 9:16 (siap untuk TikTok, Instagram Reels, dan YouTube Shorts). Seluruh pipeline berjalan secara mandiri (self-hosted) dengan transkripsi kata demi kata (Whisper), analisis momen viral (LLM), pelacakan wajah (OpenCV), subtitle karaoke dinamis, dan banner hook pembuka.
 
-# 🚧 SpectreMotion
-
-**Next-Gen Local AI Video Short & Clip Repurposing Engine**
-
-Ubah video panjang (YouTube, Google Drive, atau Upload Lokal) menjadi klip vertikal **9:16** secara otomatis — didukung transkripsi kata demi kata (*word-level Whisper*), deteksi momen viral (*LLM scoring*), *face-tracking*, dan subtitle animasi (*karaoke highlight*).
-
-![status](https://img.shields.io/badge/status-under%20construction-f5b301?style=for-the-badge&labelColor=0d1117)
-![python](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)
-![ffmpeg](https://img.shields.io/badge/ffmpeg-required-green?style=for-the-badge&logo=ffmpeg&logoColor=white)
-![fastapi](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)
-![tests](https://img.shields.io/badge/tests-144%20passed-brightgreen?style=for-the-badge)
-
-</div>
+<!-- [TEMPAT GAMBAR: BANNER / HERO PREVIEW] -->
+<!-- Panduan: Letakkan tangkapan layar antarmuka utama di: docs/assets/hero-preview.png -->
+<!-- Contoh: Tampilan web saat pengguna memasukkan link video YouTube atau preview hasil render -->
+![SpectreMotion Preview](docs/assets/hero-preview.png)
 
 ---
 
-## 📌 Daftar Isi
-- [Tentang SpectreMotion](#-tentang-spectremotion)
-- [Fitur Utama](#-fitur-utama)
-- [Arsitektur & Alur Pipeline](#-arsitektur--alur-pipeline)
-- [Persyaratan Sistem](#-persyaratan-sistem)
-- [Panduan Instalasi & Menjalankan](#-panduan-instalasi--menjalankan)
-  - [1. Menjalankan Web Dashboard (Rekomendasi)](#1-menjalankan-web-dashboard-rekomendasi)
-  - [2. Menjalankan Mode Bot Telegram](#2-menjalankan-mode-bot-telegram)
-  - [3. Menjalankan Worker di Background](#3-menjalankan-worker-di-background)
-- [Real-Time Style Editor (Ala 2short.ai)](#-real-time-style-editor-ala-2shortai)
-- [Konfigurasi `.env`](#-konfigurasi-env)
-- [Sistem Campaign (Aturan Brand & S&K)](#-sistem-campaign-aturan-brand--sk)
-- [Deployment (Docker & VPS)](#-deployment-docker--vps)
-- [Pengujian (Testing)](#-pengujian-testing)
-- [Struktur Repositori](#-struktur-repositori)
+## Daftar Isi
+- [Gambaran Umum](#gambaran-umum)
+- [Fitur Utama](#fitur-utama)
+- [Alur Kerja Pipeline](#alur-kerja-pipeline)
+- [Persyaratan Sistem](#persyaratan-sistem)
+- [Instalasi dan Menjalankan](#instalasi-dan-menjalankan)
+  - [Persiapan Lingkungan](#persiapan-lingkungan)
+  - [Menjalankan Web Dashboard](#menjalankan-web-dashboard)
+  - [Menjalankan Bot Telegram](#menjalankan-bot-telegram)
+  - [Menjalankan Worker Terpisah](#menjalankan-worker-terpisah)
+- [Editor Klip dan Pratinjau Interaktif](#editor-klip-dan-pratinjau-interaktif)
+- [Hook Studio](#hook-studio)
+- [Konfigurasi Environment (.env)](#konfigurasi-environment-env)
+- [Sistem Campaign](#sistem-campaign)
+- [Deployment](#deployment)
+- [Pengujian](#pengujian)
+- [Struktur Repositori](#struktur-repositori)
 
 ---
 
-## 💡 Tentang SpectreMotion
+## Gambaran Umum
 
-**SpectreMotion** adalah alternatif lokal (*self-hosted*) untuk layanan SaaS video repurposing seperti **2short.ai** dan **Opus Clip**. 
-
-Aplikasi ini memproses video horizontal panjang menjadi beberapa klip pendek vertikal siap unggah ke **TikTok, Instagram Reels, dan YouTube Shorts**. Semua proses berat—mulai dari ekstraksi audio, deteksi wajah, perataan framing, hingga burning subtitle—dapat berjalan 100% di mesin lokal tanpa biaya langganan API cloud.
+SpectreMotion dirancang sebagai alternatif self-hosted untuk layanan seperti 2short.ai atau Opus Clip. Aplikasi memproses input video dari URL YouTube atau berkas lokal, mengekstrak audio, mendeteksi topik dan momen berpotensi viral menggunakan LLM, lalu merender video 9:16 lengkap dengan subtitle karaoke dan banner judul pancingan (hook).
 
 ---
 
-## ⚡ Fitur Utama
+## Fitur Utama
 
-- 📱 **Real-Time Interactive Editor (2short.ai Style)**:
-  - Tonton pratinjau klip instan 480p tanpa harus menunggu proses *full render* FFmpeg.
-  - Subtitle kata-demi-kata ditampilkan langsung di browser menggunakan layer overlay CSS.
-  - Kendali audio penuh: tombol speaker `🔇`/`🔊` untuk menyalakan suara pratinjau.
-  - Ganti font, warna sorotan (*highlight*), ukuran teks, dan posisi secara *live*.
-- 🧠 **AI Viral Moment Scoring & Analysis**:
-  - Skor potensi viralitas otomatis (0–100) berdasarkan transkrip.
-  - Pendeteksi kalimat pembuka (*hook detection*) yang memancing rasa penasaran audiens.
-  - Auto-generate teks *copywriting* / caption lengkap dengan tagar, siap disalin dengan tombol **Copy**.
-- 🎙️ **Transkripsi Suara Presisi (Whisper)**:
-  - Deteksi waktu per kata (*word-level timestamps*) untuk sinkronisasi karaoke subtitle yang akurat.
-  - Caching transkrip otomatis—video yang sama tidak perlu ditranskripsi ulang saat berganti gaya klip.
-- 👤 **Face Tracking & Smart Framing 9:16**:
-  - Deteksi wajah dengan OpenCV untuk menjaga pembicara tetap berada di tengah layar (*center framing*).
-  - Dilengkapi fitur *Dynamic Zoom* halus untuk meningkatkan retensi penonton.
-- 🎨 **Koleksi Preset Subtitle**:
-  - **Hormozi**: Teks kuning tebal dengan outline kontras tinggi (2 kata per layar).
-  - **CapCut**: Aksen hijau energik (3 kata per layar).
-  - **Neon**: Cyan modern bergaya futuristik.
-  - **Cinematic**: Warna emas elegan dengan posisi tengah.
-  - **Minimal**: Putih bersih tanpa outline tebal untuk kesan editorial.
-- 🛡️ **Kualitas Kode Teruji & Terisolasi**:
-  - Dilengkapi 144 unit test (*hermetic*) tanpa koneksi luar.
-  - Database terisolasi dan aman dari polusi data saat pengujian.
+- **Transkripsi Kata demi Kata (Whisper)**: Ekstraksi ucapan dengan timestamp presisi tinggi per kata untuk kebutuhan subtitle animasi karaoke. Dilengkapi sistem caching agar video yang sama tidak perlu ditranskripsi berulang kali.
+- **Deteksi Momen Viral (LLM)**: Menilai dan memilih bagian video terbaik berdasarkan 5 indikator virality (hook strength, emotional intensity, shareability, clarity, payoff). Menyertakan pembuatan caption dan hashtag siap pakai.
+- **Live Phone Preview**: Tampilan kanvas 9:16 interaktif untuk mengecek posisi video mentah, animasi subtitle karaoke, dan banner hook secara real-time sebelum melakukan render final.
+- **Hook Studio & Overlay Pembuka**: Pengaturan banner judul hook di 3 detik pertama video dengan dukungan kotak bubble, outline, dan highlight kata khusus.
+- **Face Tracking 9:16**: Pelacakan posisi wajah pembicara menggunakan OpenCV agar subjek selalu berada di area tengah layar pada video rasio vertikal.
+- **Preset Subtitle Siap Pakai**: Mendukung berbagai gaya populer (Hormozi, Super Simple, Simple Boxy, They Are Spoken, Subtitles, dll) serta kustomisasi font, ukuran, warna sorotan, dan posisi drag-and-drop.
+- **Manajemen Sesi dan Riwayat**: Dashboard pencarian, pemutaran klip, pengunduhan file MP4, serta fitur hapus sesi massal (batch delete) untuk menghemat ruang disk.
+- **Antarmuka Ganda**: Tersedia dashboard web modern dan integrasi bot Telegram untuk memproses video langsung lewat aplikasi pesan.
 
 ---
 
-## 📐 Arsitektur & Alur Pipeline
+## Alur Kerja Pipeline
 
 ```
-[Sumber Video] 
-(YouTube / Google Drive / Upload Berkas)
+Sumber Video (YouTube / Upload Lokal)
         │
         ▼ (app/ingest/)
-[Ingestion & Probe Video] 
+Pemeriksaan Metadata & Download Video
         │
         ▼ (app/media/transcriber.py)
-[Whisper STT (Word-level timestamps)] ──► [Disk Cache (.json)]
+Transkripsi Whisper (Word Timestamps) ──► Cache Transkrip (.json)
         │
         ▼ (app/media/analyzer.py)
-[LLM Viral Scoring & Sentence Builder] ◄── [Brand/Campaign Rules]
+Analisis AI & Scoring Momen Viral ◄── Aturan Campaign (Opsional)
         │
         ├─────────────────────────────────────────┐
-        ▼ (Mode Kurasi Draf)                      ▼ (Mode Auto-Render)
-[Katalog Klip Web Dashboard]                 [Background Worker]
-  - Real-time client-side preview               - OpenCV Face Tracking (9:16)
-  - Interaktif: Font, Warna, Posisi             - FFmpeg Dynamic Zoom & Crop
-  - Audio toggle & Copy Caption                 - ASS Karaoke Subtitle Burning
+        ▼ (Mode Kurasi / Edit)                    ▼ (Mode Render)
+Katalog Klip & Live Editor                   Worker Pipeline
+  - Pratinjau HP 9:16 (Subtitle & Hook)        - Face Tracking (OpenCV)
+  - Kustomisasi font, warna, posisi            - Reframe & Dynamic Zoom (FFmpeg)
+  - Edit caption & copywriting                 - Burn Subtitle (ASS) & Hook (Pillow)
         │                                         │
-        └─────────────────► [Final Render MP4] ◄──┘
+        └─────────────────► File Final (.mp4) ◄───┘
 ```
 
 ---
 
-## 💻 Persyaratan Sistem
+## Persyaratan Sistem
 
-- **Sistem Operasi**: Windows 10/11, Ubuntu/Debian Linux, atau macOS.
-- **Python**: Versi `3.10` atau lebih baru.
-- **FFmpeg & FFprobe**: Wajib terpasang dan terdaftar di `PATH`.
-  - *Windows*: `winget install --id Gyan.FFmpeg -e`
-  - *Linux*: `sudo apt update && sudo apt install -y ffmpeg`
-- **LLM Endpoint**: Endpoint yang kompatibel dengan format OpenAI API (misal: [9Router](https://github.com/), Ollama lokal, vLLM, atau OpenAI API).
+- **Sistem Operasi**: Windows 10/11, Linux (Ubuntu/Debian), atau macOS.
+- **Python**: Versi 3.10 atau lebih baru.
+- **FFmpeg & FFprobe**: Wajib terpasang dan dapat diakses dari terminal (PATH).
+  - Windows: `winget install --id Gyan.FFmpeg -e`
+  - Linux: `sudo apt update && sudo apt install -y ffmpeg`
+  - macOS: `brew install ffmpeg`
+- **Penyedia LLM**: Server lokal atau remote yang kompatibel dengan format OpenAI API (Ollama, vLLM, 9Router, atau API komersial).
 
 ---
 
-## 🚀 Panduan Instalasi & Menjalankan
+## Instalasi dan Menjalankan
 
-### Langkah Awal (Setup)
+### Persiapan Lingkungan
 
-```powershell
-# 1. Clone repositori & masuk ke direktori
-cd c:\projects\website\SpectreMotion
+```bash
+# 1. Masuk ke direktori repositori
+cd SpectreMotion
 
 # 2. Buat virtual environment
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1       # Windows PowerShell
-# source .venv/bin/activate         # Linux / macOS
 
-# 3. Pasang dependensi
+# 3. Aktifkan virtual environment
+# Windows (PowerShell):
+.\.venv\Scripts\Activate.ps1
+# Linux / macOS:
+source .venv/bin/activate
+
+# 4. Pasang paket dependensi
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 4. Buat berkas konfigurasi .env
+# 5. Siapkan berkas konfigurasi
 cp .env.example .env
 ```
 
----
+Sesuaikan nilai di dalam file `.env`, terutama alamat `LLM_BASE_URL` dan `LLM_MODEL`.
 
-### 1. Menjalankan Web Dashboard (Rekomendasi)
+### Menjalankan Web Dashboard
 
-Tersedia skrip instan untuk Windows:
-- **Cukup klik 2x berkas `JALANKAN_WEB.bat`**  
-  *Skrip ini akan otomatis memeriksa FFmpeg, mematikan proses lama yang bentrok di port 8080, menyalakan web server + worker, lalu membuka browser.*
+**Windows (Instan):**
+Cukup klik dua kali file `JALANKAN_WEB.bat`. Skrip ini akan memeriksa dependensi, memastikan port bersih, dan membuka browser secara otomatis.
 
-Atau jalankan via terminal:
-```powershell
+**Terminal / CLI:**
+```bash
 uvicorn app.web:app --host 127.0.0.1 --port 8080 --reload
 ```
-Akses di browser: **`http://127.0.0.1:8080`**
+Buka peramban di: `http://127.0.0.1:8080`
 
----
+<!-- [TEMPAT GAMBAR: WEB GENERATOR] -->
+<!-- Panduan: Letakkan tangkapan layar form input video / halaman depan di: docs/assets/generator-page.png -->
+![Halaman Generator](docs/assets/generator-page.png)
 
-### 2. Menjalankan Mode Bot Telegram
+### Menjalankan Bot Telegram
 
-SpectreMotion juga dapat dioperasikan secara penuh lewat chat Telegram:
-```powershell
-# Klik 2x JALANKAN_BOT.bat atau lewat CLI:
+Jika ingin menggunakan bot Telegram untuk memproses video:
+```bash
+# Windows (Instan): Klik JALANKAN_BOT.bat
+# Atau via terminal:
 python -m app.bot
 ```
+Pastikan `TELEGRAM_BOT_TOKEN` telah diisi pada berkas `.env`.
 
----
+### Menjalankan Worker Terpisah
 
-### 3. Menjalankan Worker di Background
+Jika Anda menjalankan aplikasi di VPS dan ingin memisahkan proses web server dari worker rendering:
+```bash
+# Memproses antrean secara berkelanjutan:
+python -m app.worker
 
-Jika web server dan worker dijalankan secara terpisah (misalnya di lingkungan production/VPS):
-```powershell
-python -m app.worker          # Loop memproses antrean job
-python -m app.worker --once   # Proses 1 job lalu keluar
+# Memproses satu pekerjaan lalu berhenti:
+python -m app.worker --once
 ```
 
 ---
 
-## 🎛️ Real-Time Style Editor (Ala 2short.ai)
+## Editor Klip dan Pratinjau Interaktif
 
-Saat Anda mengklik **"Atur & Render"** atau **"Ubah Gaya"** pada katalog klip:
-1. **Live Phone Canvas**: Klip video sumber 480p dimuat instan di dalam bingkai handphone 9:16.
-2. **Audio Unmuted**: Klik tombol speaker (`🔇` / `🔊`) untuk mendengarkan audio pembicara sambil menyetel subtitle.
-3. **Penyetelan Gaya Teks**:
-   - Pilihan Font (*Arial Bold, Impact, Segoe UI Bold, dll.*).
-   - Ukuran font dan ketebalan outline (*stroke shadow*).
-   - Pilihan warna kata sorotan (*Karaoke highlight*).
-   - Pilihan posisi vertikal (*Bawah, Tengah, Atas*).
-4. **Copy Caption**: Tombol salin caption di setiap kartu klip memudahkan penempelan langsung ke deskripsi TikTok/Instagram.
-5. **Kirim Render**: Klik **"Render klip ini"** untuk memproses hasil akhir menggunakan GPU/CPU via FFmpeg.
+Ketika video selesai dianalisis, katalog klip akan menampilkan daftar potongan video terbaik. Klik **Atur & render** pada salah satu klip untuk membuka editor gaya:
+
+<!-- [TEMPAT GAMBAR: EDITOR MODAL & PHONE PREVIEW] -->
+<!-- Panduan: Letakkan tangkapan layar modal editor klip (frame HP dengan teks hook dan subtitle) di: docs/assets/editor-preview.png -->
+![Editor Klip](docs/assets/editor-preview.png)
+
+1. **Kanvas HP Real-Time**: Memutar video klip 480p instan tanpa proses render ulang.
+2. **Pratinjau Hook**: Menampilkan banner judul pancingan di bagian atas frame (otomatis tampil pada 0s-3s pemutaran). Anda dapat mengedit teks hook langsung dari form editor.
+3. **Pratinjau Subtitle**: Menampilkan kata yang sedang aktif dengan highlight warna dan animasi bounce/slide.
+4. **Posisi Drag-and-Drop**: Geser subtitle langsung di layar untuk menentukan penempatan atas, tengah, atau bawah.
+5. **Kontrol Suara**: Tombol speaker untuk mendengarkan audio saat menyetel teks.
+6. **Kirim Render**: Tombol untuk memproses klip final 1080x1920 ke disk.
 
 ---
 
-## ⚙️ Konfigurasi `.env`
+## Hook Studio
 
-Konfigurasi disimpan di berkas `.env`. Variabel utama yang perlu diperhatikan:
+Menu **Hook Studio** di navigasi atas digunakan untuk mengatur template global tampilan hook/judul pancingan:
 
-| Variabel | Default | Keterangan |
+<!-- [TEMPAT GAMBAR: HOOK STUDIO] -->
+<!-- Panduan: Letakkan tangkapan layar halaman Hook Studio di: docs/assets/hook-studio.png -->
+![Hook Studio](docs/assets/hook-studio.png)
+
+- Mengatur ukuran font, radius sudut bubble, dan ketebalan outline teks.
+- Mengatur warna teks utama dan warna highlight (kata yang diapit tanda bintang `*kata*`).
+- Pratinjau statis 9:16 untuk melihat perbandingan tata letak sebelum disimpan.
+- Template yang disimpan akan menjadi nilai default bagi seluruh klip baru yang diproses.
+
+---
+
+## Konfigurasi Environment (.env)
+
+| Variabel | Default | Deskripsi |
 | :--- | :--- | :--- |
-| `LLM_BASE_URL` | `http://127.0.0.1:20128/v1` | URL endpoint AI (OpenAI format, misal 9Router/Ollama). |
-| `LLM_MODEL` | `gemini-2.5-flash` | Nama model AI yang digunakan untuk analisis momen viral. |
-| `WHISPER_MODEL` | `small` | Ukuran model Whisper (`tiny`, `base`, `small`, `medium`, `large-v3`). |
-| `WHISPER_COMPUTE_TYPE` | `int8` | Presisi komputasi (`int8`, `float16`, `float32`). |
-| `APP_TOKEN` | *(opsional)* | Token proteksi web jika diakses via jaringan publik. |
-| `MAX_PROPOSED_CLIPS`| `5` | Jumlah maksimal kandidat klip yang diusulkan oleh AI. |
-| `HF_HUB_OFFLINE` | `1` | Paksa Whisper berjalan 100% offline dari cache lokal. |
+| `LLM_BASE_URL` | `http://127.0.0.1:20128/v1` | URL endpoint AI (kompatibel OpenAI format). |
+| `LLM_MODEL` | `gemini-2.5-flash` | Model AI untuk analisis dan penilaian momen viral. |
+| `LLM_API_KEY` | `sk-dummy` | Kunci API LLM jika diperlukan oleh penyedia. |
+| `WHISPER_MODEL` | `small` | Ukuran model Faster-Whisper (`tiny`, `base`, `small`, `medium`, `large-v3`). |
+| `WHISPER_COMPUTE_TYPE` | `int8` | Tipe komputasi (`int8`, `float16`, `float32`). |
+| `APP_TOKEN` | *(kosong)* | Kunci token jika web dipasang proteksi autentikasi. |
+| `MAX_PROPOSED_CLIPS` | `25` | Jumlah maksimal momen yang diusulkan oleh AI per video. |
+| `OUTPUT_DIR` | `data/output` | Direktori penyimpanan berkas video MP4 hasil render. |
+| `TARGET_WIDTH` / `HEIGHT` | `1080` / `1920` | Resolusi output kanvas vertikal (9:16). |
 
 ---
 
-## 📋 Sistem Campaign (Aturan Brand & S&K)
+## Sistem Campaign
 
-Sistem *Campaign* memungkinkan penyaringan klip secara deterministik berdasarkan aturan sponsor atau pedoman komunitas. Berkas aturan disimpan dalam format JSON di `data/campaigns/<id>.json`:
+Fitur Campaign digunakan jika Anda ingin menyaring klip berdasarkan kriteria khusus (misalnya pedoman konten atau aturan sponsor). Berkas aturan disimpan dalam format JSON di folder `data/campaigns/<id>.json`:
 
 ```json
 {
-  "id": "bebas",
-  "name": "General Clean Content",
-  "duration_s": { "min": 20, "max": 60 },
-  "banned_exact": ["judi", "slot", "pinjol", "sara"],
-  "caption_required": { "all_of": ["#shorts"] },
-  "curation_note": "Pilih klip yang memiliki pesan edukatif atau motivasi"
+  "id": "edukasi",
+  "name": "Konten Edukasi Bersih",
+  "duration_s": { "min": 25, "max": 60 },
+  "banned_exact": ["kata_terlarang", "promosi_ilegal"],
+  "caption_required": { "all_of": ["#edukasi", "#shorts"] },
+  "curation_note": "Fokus pada tips praktis yang aplikatif"
 }
 ```
-- **duration_s**: Membatalkan klip secara otomatis jika durasi di luar rentang.
-- **banned_exact**: Filter kata-kata terlarang pada transkrip.
-- **caption_required**: Rekomendasi tagar wajib.
 
 ---
 
-## 🚢 Deployment (Docker & VPS)
+## Deployment
 
 ### Docker Compose
 ```bash
 cp .env.example .env
 docker compose up -d --build
 ```
-*Layanan `web` dan `worker` akan berjalan secara terisolasi di dalam container.*
+Container akan menjalankan instance web server dan background worker secara terpisah.
 
 ### Linux VPS (systemd)
-Tersedia berkas unit systemd pada direktori `deploy/`:
+Contoh unit service systemd tersedia di direktori `deploy/`:
 ```bash
 sudo cp deploy/spectremotion-web.service /etc/systemd/system/
 sudo cp deploy/spectremotion-worker.service /etc/systemd/system/
@@ -239,45 +236,41 @@ sudo systemctl enable --now spectremotion-web spectremotion-worker
 
 ---
 
-## 🧪 Pengujian (Testing)
+## Pengujian
 
-SpectreMotion dilengkapi dengan rangkaian pengujian komprehensif (*hermetic unit & integration tests*):
+Proyek ini memiliki rangkaian unit test dan integration test mandiri tanpa ketergantungan koneksi jaringan luar:
 
-```powershell
-# Jalankan seluruh test suite
-.\.venv\Scripts\python.exe -m pytest -q -p no:warnings
+```bash
+# Menjalankan seluruh test suite:
+pytest -q -p no:warnings
 ```
-*Hasil: 144 passed (menguji migrasi database, storage session, endpoint web, parsing caption, kontrol audio, dan pipeline media).*
 
 ---
 
-## 📁 Struktur Repositori
+## Struktur Repositori
 
 ```
 SpectreMotion/
 ├── app/
-│   ├── adapters/          # Driver konkret (queue_sqlite, llm_openai, storage_local)
-│   ├── db/                # Runner migrasi SQL skema database
-│   ├── ingest/            # Download YouTube (yt-dlp), Google Drive, verifikasi URL
-│   ├── media/             # Transcriber (Whisper), Analyzer (LLM), Renderer (FFmpeg), Face-track
-│   ├── web/               # Router FastAPI, endpoint API klip, template Jinja2, static CSS/JS
-│   ├── bot.py             # Alternatif antarmuka Bot Telegram
+│   ├── adapters/          # Implementasi antrean SQLite, LLM, dan storage
+│   ├── db/                # Skrip migrasi skema database SQLite
+│   ├── ingest/            # Downloader YouTube (yt-dlp) dan parser file lokal
+│   ├── media/             # Modul Whisper, Analyzer LLM, Overlay, dan Renderer FFmpeg
+│   ├── web/               # Controller FastAPI, template Jinja2, dan static CSS/JS
+│   ├── bot.py             # Layanan bot Telegram
 │   ├── config.py          # Parser konfigurasi .env
-│   ├── pipeline.py        # Orkestrator alur kerja pembuatan klip
-│   ├── presets.py         # Konfigurasi preset subtitle (Hormozi, CapCut, dll)
-│   ├── storage.py         # Lapisan akses data SQLite
+│   ├── hookstudio.py      # Endpoint dan logika preview Hook Studio
+│   ├── pipeline.py        # Orkestrasi alur pemrosesan dan render klip
+│   ├── presets.py         # Preset gaya subtitle dan loader template
+│   ├── storage.py         # Lapisan akses database SQLite
 │   └── worker.py          # Background worker pemroses antrean render
-├── data/                  # Lokasi penyimpanan database lokal & hasil render
-├── deploy/                # Konfigurasi systemd service dan Caddyfile
-├── docs/                  # Dokumentasi arsitektur, gambar aset, dan panduan
-├── tests/                 # 144 test suite terisolasi
-├── JALANKAN_WEB.bat       # Launcher instan web dashboard untuk Windows
-├── JALANKAN_BOT.bat       # Launcher instan bot telegram untuk Windows
-└── requirements.txt       # Dependensi library Python
+├── data/                  # Direktori database lokal, video upload, dan hasil render
+├── deploy/                # Berkas konfigurasi deployment systemd dan reverse proxy
+├── docs/                  # Dokumentasi pendukung dan aset gambar
+│   └── assets/            # Folder peletakan screenshot dan visual dokumentasi
+├── templates/             # Template konfigurasi hook default (JSON)
+├── tests/                 # Rangkaian automated test suite
+├── JALANKAN_WEB.bat       # Launcher instan web untuk Windows
+├── JALANKAN_BOT.bat       # Launcher instan bot Telegram untuk Windows
+└── requirements.txt       # Daftar pustaka Python yang dibutuhkan
 ```
-
----
-
-<div align="center">
-  <sub>Dibangun untuk efisiensi pembuatan konten video pendek berbasis AI lokal.</sub>
-</div>
