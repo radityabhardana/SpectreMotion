@@ -150,12 +150,14 @@ def job_detail(request: Request, job_id: str):
     job = storage.get_job(job_id)
     if not job:
         raise HTTPException(404, "Job tidak ditemukan")
-    from app import auth
+    from app import auth, presets as presets_mod
     user = current_user(request)
     auth.require_owner(getattr(user, "id", None), job.user_id)
     clips = storage.list_clips(job_id)
+    active_template = presets_mod.active_template()
     return templates.TemplateResponse("job.html", {
         "request": request, "job": job, "clips": clips, "user": user,
+        "active_template": active_template,
     })
 
 

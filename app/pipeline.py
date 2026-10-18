@@ -85,6 +85,7 @@ def render_clip_job(job: "storage.Job") -> None:
             info = renderer.probe_video(source)
             template = _load_template(parent.template_path) or {}
 
+            effective_hook = clip.hook
             # Apply 2short.ai custom style overrides if provided in job settings or payload
             style_overrides = (settings.get("style_overrides") or
                                payload.get("style_overrides") or {})
@@ -94,7 +95,23 @@ def render_clip_job(job: "storage.Job") -> None:
                     from app import presets as presets_mod
                     preset_data = presets_mod.get_preset(preset_id)
                     if preset_data:
+                        # Only override hook if the preset itself defines custom hook settings
+                        preset_hook = (presets_mod.PRESETS.get(preset_id) or {}).get("hook")
+                        if not preset_hook and "hook" in preset_data:
+                            del preset_data["hook"]
                         template = presets_mod.deep_merge(template, preset_data)
+
+                # Apply hook overrides if present
+                if "hook_enabled" in style_overrides and not style_overrides["hook_enabled"]:
+                    effective_hook = ""
+                elif style_overrides.get("hook_text") is not None:
+                    custom_hook = str(style_overrides["hook_text"]).strip()
+                    effective_hook = custom_hook
+                    if custom_hook and custom_hook != clip.hook:
+                        try:
+                            storage.update_clip(clip.id, hook=custom_hook)
+                        except Exception:
+                            pass
 
                 # Apply subtitle overrides (font, size, colors, splitting, position)
                 sub_overrides = style_overrides.get("subtitle") or {}
@@ -125,7 +142,7 @@ def render_clip_job(job: "storage.Job") -> None:
                 source, transcript.segments,
                 start=clip.start_s, end=clip.end_s,
                 out_path=out_path, work_dir=work_dir,
-                hook_text=clip.hook, info=info, template=template,
+                hook_text=effective_hook, info=info, template=template,
                 subtitle_mode=(template or {}).get("subtitle", {}).get("mode", "karaoke"),
             )
         finally:

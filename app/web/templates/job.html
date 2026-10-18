@@ -161,6 +161,15 @@
             <div class="phone-notch"></div>
             <button type="button" class="phone-caption-btn" id="phone-copy-caption-btn" onclick="copyEditorCaption(this)" title="Salin caption klip"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Salin Caption</button>
             <video id="ed-video" playsinline loop style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; background:#000; z-index:1;"></video>
+            
+            <!-- Hook Preview Overlay (0s - 3s) -->
+            <div class="hook-preview-box" id="live-hook-box">
+              <div class="hook-preview-frame" id="live-hook-frame">
+                <div class="hook-preview-badge"><span class="hook-dot"></span> 0s–3s</div>
+                <div class="hook-preview-text" id="live-hook-text"></div>
+              </div>
+            </div>
+
             <div class="phone-safezone-guide" title="Area aman" style="z-index:3;"></div>
             <div class="sub-snap-guide-h" id="sub-snap-guide-h"></div>
             <div class="sub-preview-box" id="live-sub-box" style="z-index:4; top: 82%; transform: translateY(-50%);">
@@ -195,6 +204,29 @@
         </div>
 
         <div class="editor-controls" style="overflow-y: auto; max-height: calc(85vh - 120px); padding-right: 6px;">
+          <!-- Section 0: Hook Video Header & Text -->
+          <div class="editor-section" style="background: rgba(198, 249, 74, 0.03); border: 1px solid rgba(198, 249, 74, 0.18); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <div style="display: flex; align-items: center; gap: 7px;">
+                <span style="font-size: 15px;">🪝</span>
+                <span style="font-size: 14px; font-weight: 700; color: var(--text);">Hook Video (0 – 3 Detik)</span>
+              </div>
+              <label class="switch" title="Aktifkan / nonaktifkan banner hook">
+                <input type="checkbox" id="ed-hook-enabled" checked onchange="toggleHookEnabled(this.checked)" />
+                <span class="slider"></span>
+              </label>
+            </div>
+            <p class="editor-hint" style="margin-bottom: 8px; font-size: 11.5px;">Judul pancingan viral di atas video pada 3 detik pertama. Gunakan <code>*kata*</code> untuk highlight warna.</p>
+            <textarea id="ed-hook-text-input" rows="2" style="width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-card); color: var(--text); font-size: 12.5px; font-weight: 600; padding: 7px 10px; resize: vertical; box-sizing: border-box; line-height: 1.35;" placeholder="Teks hook..." oninput="onHookInput(this.value)"></textarea>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; flex-wrap: wrap; gap: 6px;">
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-2); cursor: pointer;">
+                <input type="checkbox" id="ed-hook-always-preview" class="custom-checkbox" onchange="toggleHookAlwaysPreview(this.checked)" />
+                <span>Kunci preview hook (selalu tampil)</span>
+              </label>
+              <button type="button" class="btn btn-sm btn-secondary" onclick="previewHookJump()" style="padding: 2px 10px; font-size: 11px;">▶ Cek Detik 0s</button>
+            </div>
+          </div>
+
           <!-- 2short.ai Header with Subtitles Toggle -->
           <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--border); margin-bottom: 16px;">
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -458,6 +490,9 @@
 
     const editorState = {
       clipId: null, clipIdx: 1, hook: '', caption: '',
+      hookEnabled: true,
+      hookAlwaysPreview: false,
+      hookConfig: {{ (active_template.get('hook', {}) if active_template else {}) | tojson }},
       subtitlesEnabled: true,
       preset: 'they_are_spoken',
       transition: 'word_bounce',
@@ -519,10 +554,107 @@
       return (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     }
 
+    function formatHookHtml(text, hlColor = '#00FF66') {
+      if (!text) return '';
+      const words = text.split(/\s+/);
+      return words.map(raw => {
+        let em = false;
+        let w = raw;
+        if (w.length >= 2 && ((w.startsWith('*') && w.endsWith('*')) || (w.startsWith('[') && w.endsWith(']')))) {
+          em = true;
+          w = w.slice(1, -1);
+        }
+        const safe = esc(w);
+        if (em) {
+          return `<span style="color: ${hlColor}; font-weight: 900;">${safe}</span>`;
+        }
+        return safe;
+      }).join(' ');
+    }
+
+    function onHookInput(val) {
+      editorState.hook = val;
+      renderHookOverlay();
+    }
+
+    function toggleHookEnabled(enabled) {
+      editorState.hookEnabled = enabled;
+      renderHookOverlay();
+    }
+
+    function toggleHookAlwaysPreview(always) {
+      editorState.hookAlwaysPreview = always;
+      renderHookOverlay();
+    }
+
+    function previewHookJump() {
+      const v = document.getElementById('ed-video');
+      if (v) {
+        v.currentTime = 0;
+        v.play().catch(() => {});
+      }
+      renderHookOverlay();
+    }
+
+    function renderHookOverlay() {
+      const box = document.getElementById('live-hook-box');
+      const textEl = document.getElementById('live-hook-text');
+      if (!box || !textEl) return;
+
+      if (!editorState.hookEnabled || !editorState.hook || !editorState.hook.trim()) {
+        box.style.display = 'none';
+        return;
+      }
+      box.style.display = 'flex';
+
+      const v = document.getElementById('ed-video');
+      const t = (v && v.currentTime) || 0;
+      const isTimeActive = (t <= 3.2);
+      const alwaysShow = Boolean(editorState.hookAlwaysPreview);
+
+      if (isTimeActive || alwaysShow) {
+        box.style.opacity = '1';
+        box.style.transform = 'translateY(0)';
+      } else {
+        box.style.opacity = '0';
+        box.style.transform = 'translateY(-4px)';
+      }
+
+      const hookCfg = editorState.hookConfig || {};
+      const hlColor = hookCfg.highlight_color || '#00FF66';
+      textEl.innerHTML = formatHookHtml(editorState.hook, hlColor);
+
+      const frame = document.getElementById('live-hook-frame');
+      if (frame) {
+        if (hookCfg.box === false) {
+          frame.style.background = 'transparent';
+          frame.style.boxShadow = 'none';
+          frame.style.border = 'none';
+        } else {
+          let bg = hookCfg.box_color || '#000000@0.55';
+          if (bg && bg.includes('@')) {
+            const parts = bg.split('@');
+            frame.style.background = `rgba(0, 0, 0, ${parts[1] || 0.65})`;
+          } else {
+            frame.style.background = 'rgba(0, 0, 0, 0.65)';
+          }
+          frame.style.borderRadius = (hookCfg.box_radius ? Math.round(hookCfg.box_radius * 0.7) : 14) + 'px';
+        }
+        if (hookCfg.stroke_w) {
+          textEl.style.textShadow = '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000';
+        } else {
+          textEl.style.textShadow = '0 2px 8px rgba(0,0,0,0.8)';
+        }
+      }
+    }
+
     function openStyleEditor(clipId, hook, idx, score, duration) {
       editorState.clipId = clipId;
       editorState.clipIdx = idx;
-      editorState.hook = hook || 'Momen terbaik';
+      const effectiveHook = hook || (clipsData[clipId] && clipsData[clipId].hook) || 'Momen terbaik';
+      editorState.hook = effectiveHook;
+      editorState.hookEnabled = true;
+      editorState.hookAlwaysPreview = false;
       editorState.words = [];
       editorState.wordsLoaded = false;
       editorState.faceTracking = true;
@@ -536,13 +668,22 @@
       document.getElementById('ed-title').textContent = 'Atur gaya klip #' + idx;
       document.getElementById('ed-subtitle').textContent = 'Skor ' + (score || 0) + '/100 · ' + (duration || 0) + ' detik';
       const clip = clipsData[clipId] || {};
-      const clipCaption = (clip.caption && clip.caption.trim()) || hook || '';
+      const clipCaption = (clip.caption && clip.caption.trim()) || effectiveHook || '';
       editorState.caption = clipCaption;
       const edCapEl = document.getElementById('ed-caption-text');
       if (edCapEl) edCapEl.textContent = clipCaption || '(Belum ada caption untuk klip ini)';
+      
+      const hookInput = document.getElementById('ed-hook-text-input');
+      if (hookInput) hookInput.value = effectiveHook;
+      const hookToggle = document.getElementById('ed-hook-enabled');
+      if (hookToggle) hookToggle.checked = true;
+      const hookLock = document.getElementById('ed-hook-always-preview');
+      if (hookLock) hookLock.checked = false;
+
       applySubtitlePosition(82);
       syncUIFromState();
       updateLivePreview();
+      renderHookOverlay();
       initSubtitleDrag();
       loadEditorVideo(clipId);
       loadClipWords(clipId);
@@ -721,9 +862,11 @@
       };
       v.ontimeupdate = () => {
         renderSubtitleOverlay();
+        renderHookOverlay();
       };
       v.onseeked = () => {
         renderSubtitleOverlay();
+        renderHookOverlay();
         updateFaceTrackPreview(true);
       };
     }
@@ -892,6 +1035,7 @@
       text.style.fontWeight = editorState.fontWeight || '700';
       text.style.fontSize = Math.max(14, Math.round(editorState.fontSize * 0.26)) + 'px';
       renderSubtitleOverlay();
+      renderHookOverlay();
     }
 
     function select2ShortPreset(name) {
@@ -1167,11 +1311,19 @@
 
     async function submitCustomRender() {
       const clipId = editorState.clipId;
+      const customHook = editorState.hookEnabled ? (editorState.hook || '').trim() : '';
+      if (clipsData[clipId]) {
+        clipsData[clipId].hook = customHook;
+        const cardHookEl = document.querySelector('#card-' + clipId + ' .clip-hook');
+        if (cardHookEl) cardHookEl.textContent = customHook;
+      }
       const payload = {
         force: true,
         style_overrides: {
           preset_id: editorState.preset,
           position: editorState.position,
+          hook_text: customHook,
+          hook_enabled: Boolean(editorState.hookEnabled),
           subtitle: {
             subtitles_enabled: Boolean(editorState.subtitlesEnabled),
             font_name: editorState.fontName,
